@@ -25,7 +25,11 @@ def load_master():
         engine="openpyxl"
     )
 
-    df.columns = df.columns.str.strip()
+    df.columns = (
+        df.columns
+        .astype(str)
+        .str.strip()
+    )
 
     required = [
         "Name",
@@ -34,14 +38,17 @@ def load_master():
     ]
 
     missing = [
-        c for c in required
+        c
+        for c in required
         if c not in df.columns
     ]
 
     if missing:
+
         st.error(
             f"Missing columns: {', '.join(missing)}"
         )
+
         st.stop()
 
     df = df.fillna("")
@@ -49,7 +56,17 @@ def load_master():
     return df
 
 
-master_df = load_master()
+try:
+    master_df = load_master()
+
+except Exception as e:
+
+    st.error(
+        f"Unable to load master file: {e}"
+    )
+
+    st.stop()
+
 
 # =====================================================
 # BUILD LOOKUP
@@ -77,8 +94,9 @@ for _, row in master_df.iterrows():
                 "type": row["Type"]
             })
 
+
 # =====================================================
-# CLASSIFICATION
+# CLASSIFICATION FUNCTION
 # =====================================================
 
 def classify_payment(text):
@@ -99,7 +117,9 @@ def classify_payment(text):
             "QE Classification": "Review"
         }
 
+    # ------------------------------------------
     # Exact Match
+    # ------------------------------------------
 
     for item in lookup:
 
@@ -110,7 +130,9 @@ def classify_payment(text):
                 "QE Classification": item["type"]
             }
 
+    # ------------------------------------------
     # Contains Match
+    # ------------------------------------------
 
     matches = []
 
@@ -142,7 +164,9 @@ def classify_payment(text):
             "QE Classification": best[2]
         }
 
+    # ------------------------------------------
     # Fuzzy Match
+    # ------------------------------------------
 
     match = process.extractOne(
         text,
@@ -188,19 +212,23 @@ if search_text:
 
     result = classify_payment(search_text)
 
-    st.write(f"**Matched Rule:** {result['Matched Rule']}")
-
     if result["QE Classification"] == "QE":
 
-        st.success("✅ QE")
+        st.success(
+            f"✅ {result['Matched Rule']} → QE"
+        )
 
     elif result["QE Classification"] == "Not QE":
 
-        st.error("❌ Not QE")
+        st.error(
+            f"❌ {result['Matched Rule']} → Not QE"
+        )
 
     else:
 
-        st.warning("⚠️ Review")
+        st.warning(
+            f"⚠️ {result['Matched Rule']} → Review"
+        )
 
 # =====================================================
 # BULK UPLOAD
@@ -211,15 +239,16 @@ st.divider()
 st.subheader("📤 Bulk QE Classification")
 
 st.info(
-    "Download the template below and populate the Description column with payment descriptions."
+    "Download the template below, populate the Description column and upload the completed file."
 )
 
+# =====================================================
 # TEMPLATE DOWNLOAD
-# ----------------------------------
+# =====================================================
 
-template_df = pd.DataFrame(
-    columns=["Description"]
-)
+template_df = pd.DataFrame({
+    "Description": []
+})
 
 template_output = BytesIO()
 
@@ -241,7 +270,15 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-with st.expander("📋 Example Excel Format", expanded=False):
+st.caption(
+    "Required column: Description"
+)
+
+# =====================================================
+# EXAMPLE
+# =====================================================
+
+with st.expander("📋 Example Excel Format"):
 
     example_df = pd.DataFrame({
         "Description": [
@@ -259,8 +296,12 @@ with st.expander("📋 Example Excel Format", expanded=False):
         use_container_width=True
     )
 
+# =====================================================
+# UPLOAD FILE
+# =====================================================
+
 uploaded_file = st.file_uploader(
-    "Upload Excel File",
+    "Upload Completed Template",
     type=["xlsx"]
 )
 
@@ -271,180 +312,168 @@ if uploaded_file:
         engine="openpyxl"
     )
 
+    input_df.columns = [
+        str(col).strip()
+        for col in input_df.columns
+    ]
+
     if "Description" not in input_df.columns:
 
         st.error(
-            "Excel must contain a 'Description' column."
+            "Excel file must contain a column named 'Description'."
         )
 
     else:
 
-        progress = st.progress(0)
-
-        results = []
-
         total = len(input_df)
 
-        for idx, row in input_df.iterrows():
-
-            result = classify_payment(
-                row["Description"]
-            )
-
-            results.append({
-                "Description": row["Description"],
-                "Matched Rule": result["Matched Rule"],
-                "QE Classification": result["QE Classification"]
-            })
-
-            progress.progress(
-                (idx + 1) / total
-            )
-
-        result_df = pd.DataFrame(results)
-
-        qe_df = result_df[
-            result_df["QE Classification"] == "QE"
-        ]
-
-        not_qe_df = result_df[
-            result_df["QE Classification"] == "Not QE"
-        ]
-
-        review_df = result_df[
-            result_df["QE Classification"] == "Review"
-        ]
-
-        # ==================================
-        # METRICS
-        # ==================================
-
-        col1, col2, col3, col4 = st.columns(4)
-
-        with col1:
-            st.metric(
-                "Total",
-                len(result_df)
-            )
-
-        with col2:
-            st.metric(
-                "QE",
-                len(qe_df)
-            )
-
-        with col3:
-            st.metric(
-                "Not QE",
-                len(not_qe_df)
-            )
-
-        with col4:
-            st.metric(
-                "Review",
-                len(review_df)
-            )
-
-        # ==================================
-        # RESULTS TABS
-        # ==================================
-
-        st.subheader("Results")
-
-        tab1, tab2, tab3 = st.tabs(
-            [
-                f"✅ QE ({len(qe_df)})",
-                f"❌ Not QE ({len(not_qe_df)})",
-                f"⚠️ Review ({len(review_df)})"
-            ]
-        )
-
-        # ----------------------------
-        # QE
-        # ----------------------------
-
-        with tab1:
-
-            st.success(
-                f"{len(qe_df)} record(s) classified as QE"
-            )
-
-            st.dataframe(
-                qe_df,
-                hide_index=True,
-                use_container_width=True
-            )
-
-        # ----------------------------
-        # NOT QE
-        # ----------------------------
-
-        with tab2:
-
-            st.error(
-                f"{len(not_qe_df)} record(s) classified as Not QE"
-            )
-
-            st.dataframe(
-                not_qe_df,
-                hide_index=True,
-                use_container_width=True
-            )
-
-        # ----------------------------
-        # REVIEW
-        # ----------------------------
-
-        with tab3:
+        if total == 0:
 
             st.warning(
-                f"{len(review_df)} record(s) require review"
+                "The uploaded file contains no records."
             )
 
-            st.dataframe(
-                review_df,
-                hide_index=True,
-                use_container_width=True
+        else:
+
+            progress = st.progress(0)
+
+            results = []
+
+            for idx, row in input_df.iterrows():
+
+                result = classify_payment(
+                    row["Description"]
+                )
+
+                results.append({
+                    "Description": row["Description"],
+                    "Matched Rule": result["Matched Rule"],
+                    "QE Classification": result["QE Classification"]
+                })
+
+                progress.progress(
+                    (idx + 1) / total
+                )
+
+            result_df = pd.DataFrame(results)
+
+            qe_df = result_df[
+                result_df["QE Classification"] == "QE"
+            ]
+
+            not_qe_df = result_df[
+                result_df["QE Classification"] == "Not QE"
+            ]
+
+            review_df = result_df[
+                result_df["QE Classification"] == "Review"
+            ]
+
+            # =================================================
+            # METRICS
+            # =================================================
+
+            col1, col2, col3, col4 = st.columns(4)
+
+            col1.metric("Total", len(result_df))
+            col2.metric("QE", len(qe_df))
+            col3.metric("Not QE", len(not_qe_df))
+            col4.metric("Review", len(review_df))
+
+            # =================================================
+            # RESULTS
+            # =================================================
+
+            st.subheader("Results")
+
+            tab1, tab2, tab3 = st.tabs(
+                [
+                    f"✅ QE ({len(qe_df)})",
+                    f"❌ Not QE ({len(not_qe_df)})",
+                    f"⚠️ Review ({len(review_df)})"
+                ]
             )
 
-        # ==================================
-        # DOWNLOAD
-        # ==================================
+            with tab1:
 
-        output = BytesIO()
+                st.success(
+                    f"{len(qe_df)} record(s) classified as QE"
+                )
 
-        with pd.ExcelWriter(
-            output,
-            engine="openpyxl"
-        ) as writer:
+                st.dataframe(
+                    qe_df,
+                    hide_index=True,
+                    use_container_width=True
+                )
 
-            result_df.to_excel(
-                writer,
-                sheet_name="Results",
-                index=False
+            with tab2:
+
+                st.error(
+                    f"{len(not_qe_df)} record(s) classified as Not QE"
+                )
+
+                st.dataframe(
+                    not_qe_df,
+                    hide_index=True,
+                    use_container_width=True
+                )
+
+            with tab3:
+
+                st.warning(
+                    f"{len(review_df)} record(s) require review"
+                )
+
+                st.dataframe(
+                    review_df,
+                    hide_index=True,
+                    use_container_width=True
+                )
+
+            # =================================================
+            # DOWNLOAD RESULTS
+            # =================================================
+
+            output = BytesIO()
+
+            with pd.ExcelWriter(
+                output,
+                engine="openpyxl"
+            ) as writer:
+
+                input_df.to_excel(
+                    writer,
+                    sheet_name="Original Upload",
+                    index=False
+                )
+
+                result_df.to_excel(
+                    writer,
+                    sheet_name="Results",
+                    index=False
+                )
+
+                qe_df.to_excel(
+                    writer,
+                    sheet_name="QE",
+                    index=False
+                )
+
+                not_qe_df.to_excel(
+                    writer,
+                    sheet_name="Not QE",
+                    index=False
+                )
+
+                review_df.to_excel(
+                    writer,
+                    sheet_name="Review",
+                    index=False
+                )
+
+            st.download_button(
+                "📥 Download Results",
+                data=output.getvalue(),
+                file_name="QE_Classification_Output.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-
-            qe_df.to_excel(
-                writer,
-                sheet_name="QE",
-                index=False
-            )
-
-            not_qe_df.to_excel(
-                writer,
-                sheet_name="Not QE",
-                index=False
-            )
-
-            review_df.to_excel(
-                writer,
-                sheet_name="Review",
-                index=False
-            )
-
-        st.download_button(
-            "📥 Download Results",
-            data=output.getvalue(),
-            file_name="QE_Classification_Output.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
