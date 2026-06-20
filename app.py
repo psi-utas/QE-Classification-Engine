@@ -258,12 +258,31 @@ if uploaded_file:
         # Results
         # --------------------------------------
 
-        st.subheader("Classification Results")
+        if search_text:
 
-        st.dataframe(
-            result_df,
-            hide_index=True,
-            use_container_width=True
+    result = classify_payment(search_text)
+
+    st.subheader("Result")
+
+    if result["QE Classification"] != "Review":
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "Matched Rule",
+                result["Matched Rule"]
+            )
+
+        with col2:
+            st.metric(
+                "Classification",
+                result["QE Classification"]
+            )
+
+    else:
+        st.warning(
+            "⚠️ No matching QE rule found. Review required."
         )
 
         # --------------------------------------
