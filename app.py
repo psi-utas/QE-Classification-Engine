@@ -210,6 +210,42 @@ st.divider()
 
 st.subheader("📤 Bulk QE Classification")
 
+st.info(
+    "Download the template below and populate the Description column with payment descriptions."
+)
+
+# TEMPLATE DOWNLOAD
+# ----------------------------------
+
+template_df = pd.DataFrame(
+    columns=["Description"]
+)
+
+template_output = BytesIO()
+
+with pd.ExcelWriter(
+    template_output,
+    engine="openpyxl"
+) as writer:
+
+    template_df.to_excel(
+        writer,
+        sheet_name="Template",
+        index=False
+    )
+
+st.download_button(
+    label="📄 Download Template",
+    data=template_output.getvalue(),
+    file_name="QE_Template.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
+uploaded_file = st.file_uploader(
+    "Upload Completed Template",
+    type=["xlsx"]
+)
+
 with st.expander("📋 Example Excel Format", expanded=False):
 
     example_df = pd.DataFrame({
