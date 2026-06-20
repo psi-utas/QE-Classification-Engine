@@ -14,19 +14,33 @@ st.set_page_config(
 )
 
 # ==================================================
-# LOAD MASTER FILE
+# LOAD DATA
 # ==================================================
 
 @st.cache_data
 def load_master():
-    df = pd.read_excel("QE_Classification_Master_List.xlsx")
-    df["Name_Lower"] = df["Name"].astype(str).str.lower().str.strip()
+
+    df = pd.read_excel(
+        "QE_Classification_Master_Expanded.xlsx"
+    )
+
+    df["Name"] = df["Name"].fillna("")
+    df["Type"] = df["Type"].fillna("")
+    df["Keywords"] = df["Keywords"].fillna("")
+
+    df["Name_Lower"] = (
+        df["Name"]
+        .astype(str)
+        .str.lower()
+        .str.strip()
+    )
+
     return df
 
 master_df = load_master()
 
 # ==================================================
-# MATCHING LOGIC
+# MATCHING FUNCTION
 # ==================================================
 
 def classify_payment(search_text):
@@ -37,70 +51,102 @@ def classify_payment(search_text):
             "QE Classification": "Review"
         }
 
-    search_text = str(search_text).strip()
+    search_text = str(search_text).lower().strip()
 
-    if search_text == "":
+    if not search_text:
         return {
             "Matched Rule": "No Match Found",
             "QE Classification": "Review"
         }
 
-    search_lower = search_text.lower()
+    # ------------------------------------------
+    # 1. Exact Name Match
+    # ------------------------------------------
 
-    # ---------------------------------------------
-    # Exact Match
-    # ---------------------------------------------
-
-    exact_match = master_df[
-        master_df["Name_Lower"] == search_lower
+    exact = master_df[
+        master_df["Name_Lower"] == search_text
     ]
 
-    if not exact_match.empty:
+    if not exact.empty:
 
-        row = exact_match.iloc[0]
+        row = exact.iloc[0]
 
         return {
             "Matched Rule": row["Name"],
             "QE Classification": row["Type"]
         }
 
-    # ---------------------------------------------
-    # Contains Match
-    # ---------------------------------------------
+    # ------------------------------------------
+    # 2. Exact Keyword Match
+    # ------------------------------------------
 
-    contains_match = master_df[
-        master_df["Name_Lower"].str.contains(
-            search_lower,
-            regex=False
-        )
-    ]
+    for _, row in master_df.iterrows():
 
-    if len(contains_match) == 1:
+        keywords = [
+            k.strip().lower()
+            for k in str(row["Keywords"]).split(";")
+            if k.strip()
+        ]
 
-        row = contains_match.iloc[0]
+        if search_text in keywords:
+
+            return {
+                "Matched Rule": row["Name"],
+                "QE Classification": row["Type"]
+            }
+
+    # ------------------------------------------
+    # 3. Keyword Contained In Search Text
+    # ------------------------------------------
+
+    matches = []
+
+    for _, row in master_df.iterrows():
+
+        keywords = [
+            k.strip().lower()
+            for k in str(row["Keywords"]).split(";")
+            if k.strip()
+        ]
+
+        for keyword in keywords:
+
+            if keyword and keyword in search_text:
+
+                matches.append(
+                    (
+                        len(keyword),
+                        row["Name"],
+                        row["Type"]
+                    )
+                )
+
+    if matches:
+
+        matches.sort(reverse=True)
 
         return {
-            "Matched Rule": row["Name"],
-            "QE Classification": row["Type"]
+            "Matched Rule": matches[0][1],
+            "QE Classification": matches[0][2]
         }
 
-    # ---------------------------------------------
-    # Fuzzy Match (Strict)
-    # ---------------------------------------------
+    # ------------------------------------------
+    # 4. Fuzzy Match (Last Resort)
+    # ------------------------------------------
 
     fuzzy_match = process.extractOne(
         search_text,
         master_df["Name"].tolist(),
-        scorer=fuzz.WRatio,
-        score_cutoff=90
+        scorer=fuzz.partial_ratio,
+        score_cutoff=92
     )
 
     if fuzzy_match:
 
-        matched_rule = fuzzy_match[0]
+        matched_name = fuzzy_match[0]
 
         row = master_df[
-            master_df["Name"] == matched_rule
+            master_df["Name"] == matched_name
         ].iloc[0]
 
         return {
@@ -108,14 +154,15 @@ def classify_payment(search_text):
             "QE Classification": row["Type"]
         }
 
-    # ---------------------------------------------
+    # ------------------------------------------
     # No Match
-    # ---------------------------------------------
+    # ------------------------------------------
 
     return {
         "Matched Rule": "No Match Found",
         "QE Classification": "Review"
     }
+
 
 # ==================================================
 # HEADER
@@ -128,12 +175,12 @@ st.caption(
 )
 
 # ==================================================
-# SEARCH
+# SINGLE SEARCH
 # ==================================================
 
 search_text = st.text_input(
     "",
-    placeholder='Type any payment type or keyword — e.g. "car allowance", "jury duty", "overtime", "parental leave"...'
+    placeholder='Type payment type e.g. "Parental Leave Half Pay", "Car Allowance", "PILON", "FDVL"...'
 )
 
 if search_text:
@@ -145,14 +192,12 @@ if search_text:
     col1, col2 = st.columns(2)
 
     with col1:
-
         st.metric(
             "Matched Rule",
             result["Matched Rule"]
         )
 
     with col2:
-
         st.metric(
             "Classification",
             result["QE Classification"]
@@ -169,7 +214,7 @@ if search_text:
     else:
 
         st.warning(
-            "⚠️ No confident match found. Review required."
+            "⚠️ Review Required"
         )
 
 # ==================================================
@@ -180,21 +225,34 @@ st.divider()
 
 st.subheader("📤 Bulk QE Classification")
 
-st.markdown("### Example Excel Format")
+st.markdown(
+    """
+### Example Excel Format
+
+| Description |
+|-------------|
+| Parental Leave Half Pay |
+| Annual Leave |
+| PILON |
+| FDVL |
+| Car Allowance |
+"""
+)
 
 example_df = pd.DataFrame({
     "Description": [
-        "Parental Leave",
+        "Parental Leave Half Pay",
         "Annual Leave",
-        "Overtime",
+        "PILON",
+        "FDVL",
         "Car Allowance"
     ]
 })
 
 st.dataframe(
     example_df,
-    use_container_width=True,
-    hide_index=True
+    hide_index=True,
+    use_container_width=True
 )
 
 uploaded_file = st.file_uploader(
@@ -209,16 +267,12 @@ if uploaded_file:
     if "Description" not in input_df.columns:
 
         st.error(
-            "Excel file must contain a column named 'Description'"
+            "Excel file must contain a Description column."
         )
 
     else:
 
-        st.info(
-            f"Processing {len(input_df)} records..."
-        )
-
-        progress_bar = st.progress(0)
+        progress = st.progress(0)
 
         results = []
 
@@ -226,117 +280,84 @@ if uploaded_file:
 
         for idx, row in input_df.iterrows():
 
-            description = row["Description"]
-
-            result = classify_payment(description)
+            result = classify_payment(
+                row["Description"]
+            )
 
             results.append({
-                "Description": description,
+                "Description": row["Description"],
                 "Matched Rule": result["Matched Rule"],
                 "QE Classification": result["QE Classification"]
             })
 
-            progress_bar.progress(
+            progress.progress(
                 (idx + 1) / total
             )
 
         result_df = pd.DataFrame(results)
 
-        # ==========================================
-        # SUMMARY METRICS
-        # ==========================================
+        # Metrics
 
-        total_records = len(result_df)
-
-        matched_records = len(
-            result_df[
-                result_df["QE Classification"] != "Review"
-            ]
-        )
-
-        review_records = len(
-            result_df[
-                result_df["QE Classification"] == "Review"
-            ]
-        )
-
-        qe_records = len(
+        qe_count = len(
             result_df[
                 result_df["QE Classification"] == "QE"
             ]
         )
 
-        not_qe_records = len(
+        not_qe_count = len(
             result_df[
                 result_df["QE Classification"] == "Not QE"
             ]
         )
 
-        col1, col2, col3, col4, col5 = st.columns(5)
+        review_count = len(
+            result_df[
+                result_df["QE Classification"] == "Review"
+            ]
+        )
 
-        with col1:
-            st.metric("Total", total_records)
+        c1, c2, c3 = st.columns(3)
 
-        with col2:
-            st.metric("Matched", matched_records)
+        c1.metric("QE", qe_count)
+        c2.metric("Not QE", not_qe_count)
+        c3.metric("Review", review_count)
 
-        with col3:
-            st.metric("Review", review_records)
-
-        with col4:
-            st.metric("QE", qe_records)
-
-        with col5:
-            st.metric("Not QE", not_qe_records)
-
-        # ==========================================
-        # RESULTS
-        # ==========================================
-
-        st.subheader("Classification Results")
+        st.subheader("Results")
 
         st.dataframe(
             result_df,
-            use_container_width=True,
-            hide_index=True
+            hide_index=True,
+            use_container_width=True
         )
 
-        # ==========================================
-        # MATCH LOGS
-        # ==========================================
-
-        tab1, tab2 = st.tabs([
-            "✅ Matched",
-            "⚠️ Review Required"
-        ])
+        tab1, tab2 = st.tabs(
+            [
+                "✅ Matched",
+                "⚠️ Review"
+            ]
+        )
 
         with tab1:
 
-            matched_df = result_df[
-                result_df["QE Classification"] != "Review"
-            ]
-
             st.dataframe(
-                matched_df,
-                use_container_width=True,
-                hide_index=True
+                result_df[
+                    result_df["QE Classification"] != "Review"
+                ],
+                hide_index=True,
+                use_container_width=True
             )
 
         with tab2:
 
-            review_df = result_df[
-                result_df["QE Classification"] == "Review"
-            ]
-
             st.dataframe(
-                review_df,
-                use_container_width=True,
-                hide_index=True
+                result_df[
+                    result_df["QE Classification"] == "Review"
+                ],
+                hide_index=True,
+                use_container_width=True
             )
 
-        # ==========================================
-        # DOWNLOAD FILE
-        # ==========================================
+        # Download File
 
         output = BytesIO()
 
@@ -351,20 +372,8 @@ if uploaded_file:
                 index=False
             )
 
-            matched_df.to_excel(
-                writer,
-                sheet_name="Matched",
-                index=False
-            )
-
-            review_df.to_excel(
-                writer,
-                sheet_name="Review Required",
-                index=False
-            )
-
         st.download_button(
-            label="📥 Download Results",
+            "📥 Download Results",
             data=output.getvalue(),
             file_name="QE_Classification_Output.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
