@@ -26,7 +26,7 @@ def load_master():
 
     df["Name"] = df["Name"].fillna("")
     df["Type"] = df["Type"].fillna("")
-    df["Keyword"] = df["Keyword"].fillna("")
+    df["keyword"] = df["keyword"].fillna("")
 
     df["Name_Lower"] = (
         df["Name"]
