@@ -210,23 +210,23 @@ st.divider()
 
 st.subheader("📤 Bulk QE Classification")
 
-example_df = pd.DataFrame({
-    "Description": [
-        "Parental Leave Half Pay",
-        "Family Violence Leave",
-        "PILON",
-        "Annual Leave",
-        "Car Allowance"
-    ]
-})
+with st.expander("📋 Example Excel Format", expanded=False):
 
-st.markdown("### Example File")
+    example_df = pd.DataFrame({
+        "Description": [
+            "Parental Leave Half Pay",
+            "Family Violence Leave",
+            "PILON",
+            "Annual Leave",
+            "Car Allowance"
+        ]
+    })
 
-st.dataframe(
-    example_df,
-    hide_index=True,
-    use_container_width=True
-)
+    st.dataframe(
+        example_df,
+        hide_index=True,
+        use_container_width=True
+    )
 
 uploaded_file = st.file_uploader(
     "Upload Excel File",
@@ -243,7 +243,7 @@ if uploaded_file:
     if "Description" not in input_df.columns:
 
         st.error(
-            "Excel must contain a Description column."
+            "Excel must contain a 'Description' column."
         )
 
     else:
@@ -272,13 +272,113 @@ if uploaded_file:
 
         result_df = pd.DataFrame(results)
 
+        qe_df = result_df[
+            result_df["QE Classification"] == "QE"
+        ]
+
+        not_qe_df = result_df[
+            result_df["QE Classification"] == "Not QE"
+        ]
+
+        review_df = result_df[
+            result_df["QE Classification"] == "Review"
+        ]
+
+        # ==================================
+        # METRICS
+        # ==================================
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric(
+                "Total",
+                len(result_df)
+            )
+
+        with col2:
+            st.metric(
+                "QE",
+                len(qe_df)
+            )
+
+        with col3:
+            st.metric(
+                "Not QE",
+                len(not_qe_df)
+            )
+
+        with col4:
+            st.metric(
+                "Review",
+                len(review_df)
+            )
+
+        # ==================================
+        # RESULTS TABS
+        # ==================================
+
         st.subheader("Results")
 
-        st.dataframe(
-            result_df,
-            hide_index=True,
-            use_container_width=True
+        tab1, tab2, tab3 = st.tabs(
+            [
+                f"✅ QE ({len(qe_df)})",
+                f"❌ Not QE ({len(not_qe_df)})",
+                f"⚠️ Review ({len(review_df)})"
+            ]
         )
+
+        # ----------------------------
+        # QE
+        # ----------------------------
+
+        with tab1:
+
+            st.success(
+                f"{len(qe_df)} record(s) classified as QE"
+            )
+
+            st.dataframe(
+                qe_df,
+                hide_index=True,
+                use_container_width=True
+            )
+
+        # ----------------------------
+        # NOT QE
+        # ----------------------------
+
+        with tab2:
+
+            st.error(
+                f"{len(not_qe_df)} record(s) classified as Not QE"
+            )
+
+            st.dataframe(
+                not_qe_df,
+                hide_index=True,
+                use_container_width=True
+            )
+
+        # ----------------------------
+        # REVIEW
+        # ----------------------------
+
+        with tab3:
+
+            st.warning(
+                f"{len(review_df)} record(s) require review"
+            )
+
+            st.dataframe(
+                review_df,
+                hide_index=True,
+                use_container_width=True
+            )
+
+        # ==================================
+        # DOWNLOAD
+        # ==================================
 
         output = BytesIO()
 
@@ -293,9 +393,27 @@ if uploaded_file:
                 index=False
             )
 
+            qe_df.to_excel(
+                writer,
+                sheet_name="QE",
+                index=False
+            )
+
+            not_qe_df.to_excel(
+                writer,
+                sheet_name="Not QE",
+                index=False
+            )
+
+            review_df.to_excel(
+                writer,
+                sheet_name="Review",
+                index=False
+            )
+
         st.download_button(
             "📥 Download Results",
-            output.getvalue(),
-            "QE_Classification_Output.xlsx",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            data=output.getvalue(),
+            file_name="QE_Classification_Output.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
