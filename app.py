@@ -21,7 +21,7 @@ st.set_page_config(
 def load_master():
 
     df = pd.read_excel(
-        "QE_Classification_Master_Expanded.xlsx"
+        "QE_Classification_Master_List.xlsx"
     )
 
     df["Name"] = df["Name"].fillna("")
