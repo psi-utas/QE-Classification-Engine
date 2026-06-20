@@ -262,3 +262,31 @@ if uploaded_file:
             engine="openpyxl"
         ) as writer:
 
+            output_df.to_excel(
+                writer,
+                sheet_name="Results",
+                index=False
+            )
+
+            output_df[
+                output_df["QE Classification"] != "Review"
+            ].to_excel(
+                writer,
+                sheet_name="Matched",
+                index=False
+            )
+
+            output_df[
+                output_df["QE Classification"] == "Review"
+            ].to_excel(
+                writer,
+                sheet_name="Review Required",
+                index=False
+            )
+
+        st.download_button(
+            label="📥 Download Classified Results",
+            data=output.getvalue(),
+            file_name="QE_Classification_Output.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
