@@ -241,11 +241,6 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-uploaded_file = st.file_uploader(
-    "Upload Completed Template",
-    type=["xlsx"]
-)
-
 with st.expander("📋 Example Excel Format", expanded=False):
 
     example_df = pd.DataFrame({
