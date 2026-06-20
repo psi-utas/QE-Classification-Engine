@@ -188,75 +188,23 @@ if search_text:
 
     result = classify_payment(search_text)
 
-    st.subheader("Result")
+    if result["QE Classification"] == "QE":
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.text_input(
-            "Matched Rule",
-            value=result["Matched Rule"],
-            disabled=True
+        st.success(
+            f"✅ {result['Matched Rule']} → QE"
         )
 
-    with col2:
+    elif result["QE Classification"] == "Not QE":
 
-        classification = result["QE Classification"]
+        st.error(
+            f"❌ {result['Matched Rule']} → Not QE"
+        )
 
-        if classification == "QE":
+    else:
 
-            st.markdown(
-                """
-                <div style="
-                    background-color:#d4edda;
-                    color:#155724;
-                    padding:10px;
-                    border-radius:8px;
-                    text-align:center;
-                    font-weight:bold;
-                ">
-                    ✅ QE
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        elif classification == "Not QE":
-
-            st.markdown(
-                """
-                <div style="
-                    background-color:#f8d7da;
-                    color:#721c24;
-                    padding:10px;
-                    border-radius:8px;
-                    text-align:center;
-                    font-weight:bold;
-                ">
-                    ❌ Not QE
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        else:
-
-            st.markdown(
-                """
-                <div style="
-                    background-color:#fff3cd;
-                    color:#856404;
-                    padding:10px;
-                    border-radius:8px;
-                    text-align:center;
-                    font-weight:bold;
-                ">
-                    ⚠️ Review
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        st.warning(
+            f"⚠️ {result['Matched Rule']} → Review"
+        )
 # =====================================================
 # BULK UPLOAD
 # =====================================================
