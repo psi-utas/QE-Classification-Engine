@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+from rapidfuzz import fuzz, process
+from io import BytesIO
 
 st.set_page_config(
     page_title="QE Lookup",
@@ -7,18 +9,27 @@ st.set_page_config(
     layout="wide"
 )
 
+# --------------------------------------------------
+# Load Master Data
+# --------------------------------------------------
 @st.cache_data
 def load_master():
     return pd.read_excel("QE_Classification_Master_List.xlsx")
 
 master_df = load_master()
 
+# --------------------------------------------------
+# Title
+# --------------------------------------------------
 st.title("🔍 QE Lookup")
 
-# =======================================
-# Single Search
-# =======================================
+st.caption(
+    "Search a payment type or upload an Excel file for bulk QE classification."
+)
 
+# --------------------------------------------------
+# Single Search
+# --------------------------------------------------
 search_text = st.text_input(
     "",
     placeholder='Type any payment type or keyword — e.g. "car allowance", "jury duty", "overtime", "parental leave"...'
@@ -26,108 +37,228 @@ search_text = st.text_input(
 
 if search_text:
 
-    results = master_df[
-        master_df["Name"].str.contains(search_text, case=False, na=False)
-    ]
+    match = process.extractOne(
+        search_text,
+        master_df["Name"].tolist(),
+        scorer=fuzz.token_sort_ratio
+    )
 
-    if len(results) > 0:
+    if match:
 
-        for _, row in results.iterrows():
+        payment_name = match[0]
+        confidence = round(match[1], 2)
 
-            if row["Type"] == "QE":
-                st.success(f"✅ {row['Name']} → QE")
+        row = master_df[
+            master_df["Name"] == payment_name
+        ].iloc[0]
 
-            elif row["Type"] == "Not QE":
-                st.error(f"❌ {row['Name']} → Not QE")
+        st.subheader("Result")
 
-            else:
-                st.warning(f"⚠️ {row['Name']} → Review")
+        if row["Type"] == "QE":
+            st.success(
+                f"✅ {payment_name} → QE (Confidence: {confidence}%)"
+            )
 
-        st.dataframe(results, use_container_width=True)
+        elif row["Type"] == "Not QE":
+            st.error(
+                f"❌ {payment_name} → Not QE (Confidence: {confidence}%)"
+            )
 
-    else:
-        st.warning("No matches found.")
+        else:
+            st.warning(
+                f"⚠️ {payment_name} → Review (Confidence: {confidence}%)"
+            )
 
-st.divider()
-
-# =======================================
+# --------------------------------------------------
 # Bulk Upload
-# =======================================
+# --------------------------------------------------
+st.divider()
 
 st.subheader("📤 Bulk QE Classification")
 
+st.markdown("### Example Excel Format")
+
+example_df = pd.DataFrame({
+    "Description": [
+        "Parental Leave",
+        "Overtime",
+        "Annual Leave",
+        "Car Allowance",
+        "Sign-on Bonus"
+    ]
+})
+
+st.dataframe(example_df, hide_index=True)
+
 uploaded_file = st.file_uploader(
-    "Upload an Excel file containing a Description column",
+    "Upload Excel File",
     type=["xlsx"]
+)
+
+threshold = st.slider(
+    "Minimum Match Confidence (%)",
+    min_value=50,
+    max_value=100,
+    value=80
 )
 
 if uploaded_file:
 
     input_df = pd.read_excel(uploaded_file)
 
-    required_col = "Description"
+    if "Description" not in input_df.columns:
 
-    if required_col not in input_df.columns:
-        st.error("Excel file must contain a column named 'Description'")
+        st.error(
+            "Excel file must contain a column named 'Description'"
+        )
 
     else:
 
-        def classify_payment(desc):
+        progress = st.progress(0)
+
+        matched = []
+        unmatched = []
+
+        results = []
+
+        total = len(input_df)
+
+        for i, desc in enumerate(input_df["Description"]):
 
             if pd.isna(desc):
-                return "Review"
 
-            matches = master_df[
-                master_df["Name"].str.contains(
-                    str(desc),
-                    case=False,
-                    na=False,
-                    regex=False
+                results.append(
+                    [desc, "", "", "Review"]
                 )
+
+                continue
+
+            match = process.extractOne(
+                str(desc),
+                master_df["Name"].tolist(),
+                scorer=fuzz.token_sort_ratio
+            )
+
+            if match:
+
+                master_name = match[0]
+                confidence = round(match[1], 2)
+
+                if confidence >= threshold:
+
+                    qe_type = master_df.loc[
+                        master_df["Name"] == master_name,
+                        "Type"
+                    ].iloc[0]
+
+                    matched.append(desc)
+
+                else:
+
+                    qe_type = "Review"
+
+                    unmatched.append(desc)
+
+            else:
+
+                master_name = ""
+                confidence = 0
+                qe_type = "Review"
+
+                unmatched.append(desc)
+
+            results.append([
+                desc,
+                master_name,
+                confidence,
+                qe_type
+            ])
+
+            progress.progress((i + 1) / total)
+
+        output_df = pd.DataFrame(
+            results,
+            columns=[
+                "Description",
+                "Matched Value",
+                "Confidence",
+                "QE Classification"
             ]
-
-            if len(matches) > 0:
-                return matches.iloc[0]["Type"]
-
-            # reverse search
-            matches = master_df[
-                master_df["Name"].apply(
-                    lambda x: str(desc).lower() in str(x).lower()
-                )
-            ]
-
-            if len(matches) > 0:
-                return matches.iloc[0]["Type"]
-
-            return "Review"
-
-        input_df["QE Classification"] = input_df["Description"].apply(
-            classify_payment
         )
 
         st.success(
-            f"Processed {len(input_df)} records"
+            f"Processed {len(output_df)} records"
         )
+
+        # ------------------------------------------
+        # Metrics
+        # ------------------------------------------
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(
+                "Matched",
+                len(matched)
+            )
+
+        with col2:
+            st.metric(
+                "Review Required",
+                len(unmatched)
+            )
+
+        with col3:
+            st.metric(
+                "Total",
+                len(output_df)
+            )
+
+        # ------------------------------------------
+        # Results
+        # ------------------------------------------
+
+        st.subheader("Classification Results")
 
         st.dataframe(
-            input_df,
-            use_container_width=True
+            output_df,
+            use_container_width=True,
+            hide_index=True
         )
 
-        output_file = "QE_Classified_Output.xlsx"
+        # ------------------------------------------
+        # Logs
+        # ------------------------------------------
 
-        with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
-            input_df.to_excel(
-                writer,
-                sheet_name="QE Results",
-                index=False
+        tab1, tab2 = st.tabs([
+            "✅ Matched",
+            "⚠️ Review Required"
+        ])
+
+        with tab1:
+            st.dataframe(
+                output_df[
+                    output_df["QE Classification"] != "Review"
+                ],
+                use_container_width=True
             )
 
-        with open(output_file, "rb") as file:
-
-            st.download_button(
-                label="📥 Download Results",
-                data=file,
-                file_name="QE_Classified_Output.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        with tab2:
+            st.dataframe(
+                output_df[
+                    output_df["QE Classification"] == "Review"
+                ],
+                use_container_width=True
             )
+
+        # ------------------------------------------
+        # Download Output
+        # ------------------------------------------
+
+        output = BytesIO()
+
+        with pd.ExcelWriter(
+            output,
+            engine="openpyxl"
+        ) as writer:
+
