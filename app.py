@@ -202,12 +202,61 @@ if search_text:
 
     with col2:
 
-        st.text_input(
-            "Classification",
-            value=result["QE Classification"],
-            disabled=True
-        )
+        classification = result["QE Classification"]
 
+        if classification == "QE":
+
+            st.markdown(
+                """
+                <div style="
+                    background-color:#d4edda;
+                    color:#155724;
+                    padding:10px;
+                    border-radius:8px;
+                    text-align:center;
+                    font-weight:bold;
+                ">
+                    ✅ QE
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        elif classification == "Not QE":
+
+            st.markdown(
+                """
+                <div style="
+                    background-color:#f8d7da;
+                    color:#721c24;
+                    padding:10px;
+                    border-radius:8px;
+                    text-align:center;
+                    font-weight:bold;
+                ">
+                    ❌ Not QE
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        else:
+
+            st.markdown(
+                """
+                <div style="
+                    background-color:#fff3cd;
+                    color:#856404;
+                    padding:10px;
+                    border-radius:8px;
+                    text-align:center;
+                    font-weight:bold;
+                ">
+                    ⚠️ Review
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 # =====================================================
 # BULK UPLOAD
 # =====================================================
