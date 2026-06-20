@@ -188,23 +188,20 @@ if search_text:
 
     result = classify_payment(search_text)
 
+    st.write(f"**Matched Rule:** {result['Matched Rule']}")
+
     if result["QE Classification"] == "QE":
 
-        st.success(
-            f"✅ {result['Matched Rule']} → QE"
-        )
+        st.success("✅ QE")
 
     elif result["QE Classification"] == "Not QE":
 
-        st.error(
-            f"❌ {result['Matched Rule']} → Not QE"
-        )
+        st.error("❌ Not QE")
 
     else:
 
-        st.warning(
-            f"⚠️ {result['Matched Rule']} → Review"
-        )
+        st.warning("⚠️ Review")
+
 # =====================================================
 # BULK UPLOAD
 # =====================================================
