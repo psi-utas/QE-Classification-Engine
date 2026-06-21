@@ -307,10 +307,6 @@ st.divider()
 st.caption(
     """
     **SuperQE v1.0 Beta**
-
-    No data stored. Files you upload are processed in memory only and discarded immediately after results are returned.
-    Nothing is saved, logged, or transmitted to any third party.
-
     Built by Maruf Sebgatullah.
     """
 )
