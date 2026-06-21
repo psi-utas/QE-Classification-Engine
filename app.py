@@ -42,7 +42,7 @@ st.markdown("""
     Super<span class="superqe-accent">QE</span>
 </div>
 """, unsafe_allow_html=True)
-st.caption("Powered by Google Gemini")
+
 
 # SIDEBAR
 with st.sidebar:
@@ -500,6 +500,7 @@ st.markdown(
     <div style="text-align: center; padding: 10px; color: #666666; font-size: 0.85rem;">
         <p style="margin-bottom: 4px;">🛡️ <b>No data stored.</b> Files you upload are processed in memory only and discarded immediately after results are returned. Nothing is saved, logged, or transmitted to any third party.</p>
         <p style="font-size: 0.8rem; color: #888888; margin-top: 0;">Designed & Developed by Maruf, Sebgatullah</p>
+    st.caption("Powered by Google Gemini")
     </div>
     """,
     unsafe_allow_html=True
