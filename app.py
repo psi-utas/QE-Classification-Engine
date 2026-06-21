@@ -11,12 +11,37 @@ st.set_page_config(
     layout="wide"
 )
 
+#force block
 st.markdown("""
 <style>
 header[data-testid="stHeader"] {
     display: none;
 }
 </style>
+""", unsafe_allow_html=True)
+
+#title
+
+st.markdown("""
+<style>
+.superqe-banner {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+}
+.superqe-accent {
+    color: #60a5fa;
+}
+</style>
+
+<div class="superqe-banner">
+    Super<span class="superqe-accent">QE</span>
+</div>
 """, unsafe_allow_html=True)
 
 # SIDEBAR
