@@ -226,10 +226,7 @@ def classify_bulk(input_df):
     return pd.DataFrame(results)
 
 # HEADER & SINGLE SEARCH
-# =====================================================
-# ------------------------
 # QE Lookup Card
-# ------------------------
 
 with st.container(border=True):
 
@@ -273,10 +270,7 @@ with st.container(border=True):
                         animation:spin 0.8s linear infinite;
                     ">
                     </div>
-
-                    <span>
                         Consulting classification engine...
-                    </span>
                 </div>
 
                 <style>
@@ -298,9 +292,7 @@ with st.container(border=True):
         classification = result.get("QE Classification", "Review")
         rule = result.get("Matched Rule", "Unknown")
         reason = result.get("Reason", "")
-
-        st.divider()
-
+        
         # Result card
         if classification == "QE":
             st.markdown(
