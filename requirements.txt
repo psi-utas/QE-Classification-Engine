@@ -4,5 +4,5 @@ openpyxl
 streamlit-extras
 pyodbc
 rapidfuzz
-openai
+google-generativeai
 
