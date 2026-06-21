@@ -251,7 +251,7 @@ if search_text:
                     border-left-color: #0068c9;
                     animation: spin 1s linear infinite;
                 "></div>
-                <div style="font-size: 1.1rem; font-weight: 250; color: #0068c9; font-family: sans-serif;">
+                <div style= font-weight: 100; color: #0068c9; font-family: sans-serif;">
                     ✨ Consulting the classification engine... Let's see what we've got!
                 </div>
             </div>
