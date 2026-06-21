@@ -4,6 +4,7 @@ import google.generativeai as genai
 from io import BytesIO
 import json
 
+
 # =====================================================
 # PAGE CONFIG
 # =====================================================
@@ -206,7 +207,7 @@ if search_text:
 # BULK UPLOAD
 # =====================================================
 
-st.divider()
+/* st.divider()
 
 st.subheader("📤 Bulk QE Classification")
 
@@ -450,3 +451,6 @@ if uploaded_file:
                 file_name="QE_Classification_Output.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+
+
+*/
