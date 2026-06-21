@@ -227,17 +227,13 @@ def classify_bulk(input_df):
 
 # HEADER & SINGLE SEARCH
 # QE Lookup Card
-result_placeholder = st.container(border=True)
-
-with result_placeholder:
-
     st.markdown("### 🔍 QE Lookup")
     st.caption("Search a payment description")
 
     with st.form("qe_search_form"):
         search_text = st.text_input(
             "",
-            placeholder="Annual Leave, Parental Leave, Family Violence..."
+            placeholder="Annual Leave, Parental Leave, TOIL..."
         )
 
         submitted = st.form_submit_button("Search")
