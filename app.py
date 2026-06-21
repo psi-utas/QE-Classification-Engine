@@ -92,7 +92,13 @@ Not QE Examples:
 - Long service leave paid out under a portable long service leave scheme
 - Genuine redundancy payments, severance pay, and Employee Termination Payments (ETPs)
 - Bonuses earned solely for work performed entirely outside ordinary hours
-- Salary sacrificed amounts that relate to non-OTE payments (such as sacrificing overtime or parental leave)
+- Salary sacrifice SUPERANNUATION contributions (Pre-tax amounts sacrificed specifically into a super fund)
+- Overtime hours, overtime loading, and cash out of overtime TOIL
+- Unused leave paid out on termination (Annual or Long service leave paid upon exit)
+- Employer-paid or Government-paid parental leave
+- Genuine redundancy payments, severance pay, and ETPs
+- Salary sacrifice for NON-SUPER fringe benefits (e.g., Gym salary sacrifice, Novated car leases, Laptop/Device packaging)
+- Bonuses earned solely for work performed entirely outside ordinary hours
 
 Review Examples:
 - Expense allowances (Expected to be fully spent by the employee in the course of doing their job)
@@ -103,6 +109,7 @@ Review Examples:
 - Phone allowances, Internet allowances, or Home office allowances
 - Meal allowances, Living Away From Home Allowances (LAFHA), or Accommodation allowances
 - Underpayments, Back pay, or Lump Sum payments in arrears (requires reviewing what the original payment type was)
+
 Return format JSON schema:
 {
     "Matched Rule": "string",
@@ -140,7 +147,7 @@ QE Examples:
 - Long service leave (not paid under a portable scheme)
 - Workers' compensation where the employee actually performs work or is required to attend work
 - All employee commissions (including commissions for work performed entirely outside ordinary hours)
-- Salary sacrifice superannuation contributions (pre-tax amounts that would have been OTE if paid as cash)
+- Salary sacrifice SUPERANNUATION contributions (Pre-tax amounts sacrificed specifically into a super fund)
 - Performance bonuses, Christmas bonuses, retention bonuses, sign-on bonuses, and referral bonuses
 - Higher duties allowances, task allowances, skill allowances, qualification allowances, first-aid allowances, or danger allowances
 - Payments in lieu of notice upon termination (this is an explicit exception to exit rules)
@@ -160,6 +167,12 @@ Not QE Examples:
 - Genuine redundancy payments, severance pay, and Employee Termination Payments (ETPs)
 - Bonuses earned solely for work performed entirely outside ordinary hours
 - Salary sacrificed amounts that relate to non-OTE payments (such as sacrificing overtime or parental leave)
+- Overtime hours, overtime loading, and cash out of overtime TOIL
+- Unused leave paid out on termination (Annual or Long service leave paid upon exit)
+- Employer-paid or Government-paid parental leave
+- Genuine redundancy payments, severance pay, and ETPs
+- Salary sacrifice for NON-SUPER fringe benefits (e.g., Gym salary sacrifice, Novated car leases, Laptop/Device packaging)
+- Bonuses earned solely for work performed entirely outside ordinary hours
 
 Review Examples:
 - Expense allowances (Expected to be fully spent by the employee in the course of doing their job)
@@ -176,7 +189,6 @@ Return format JSON schema:
   {
     "Description": "string",
     "Matched Rule": "string",
-    "QE Classification": "QE or Not QE or Review",
     "Reason": "string"
   }
 ]
