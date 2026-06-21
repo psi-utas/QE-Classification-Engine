@@ -13,21 +13,6 @@ st.set_page_config(
     layout="wide"
 )
 # =====================================================
-# THEME TOGGLE
-# =====================================================
-
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = False
-
-with st.sidebar:
-    st.divider()
-    dark_mode = st.toggle(
-        "🌙 Dark Mode",
-        value=st.session_state.dark_mode
-    )
-    st.session_state.dark_mode = dark_mode
-
-# =====================================================
 # DYNAMIC STYLING
 # =====================================================
 
