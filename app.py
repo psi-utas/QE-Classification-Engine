@@ -100,55 +100,131 @@ Return ONLY valid JSON.
 # CORE FUNCTIONS
 # =====================================================
 def classify_payment(description):
+
     try:
-        prompt = f"{SINGLE_PROMPT}\n\nDescription:\n{description}"
+
+        prompt = f"""
+{SINGLE_PROMPT}
+
+Description:
+{description}
+"""
+
         response = model.generate_content(
             prompt,
             generation_config=generation_config
         )
-        return json.loads(response.text.strip())
+
+        text = response.text.strip()
+
+        return json.loads(text)
+
     except Exception as e:
+
         return {
             "Matched Rule": "AI Error",
             "QE Classification": "Review",
             "Reason": str(e)
         }
 
+
 def classify_bulk(input_df):
-    descriptions = input_df["Description"].fillna("").astype(str).tolist()
-    description_text = "\n".join([f"{i+1}. {d}" for i, d in enumerate(descriptions)])
 
-    prompt = f"{BULK_PROMPT}\n\nDescriptions:\n{description_text}"
-    response = model.generate_content(
-        prompt,
-        generation_config=generation_config
-    )
-    
-    results = json.loads(response.text.strip())
-    return pd.DataFrame(results)
+    try:
+
+        descriptions = (
+            input_df["Description"]
+            .fillna("")
+            .astype(str)
+            .tolist()
+        )
+
+        description_text = "\n".join(
+            f"{i+1}. {d}"
+            for i, d in enumerate(descriptions)
+        )
+
+        prompt = f"""
+{BULK_PROMPT}
+
+Descriptions:
+{description_text}
+"""
+
+        response = model.generate_content(
+            prompt,
+            generation_config=generation_config
+        )
+
+        text = response.text.strip()
+
+        results = json.loads(text)
+
+        return pd.DataFrame(results)
+
+    except Exception as e:
+
+        return pd.DataFrame({
+            "Description": ["ERROR"],
+            "QE Classification": ["Review"],
+            "Matched Rule": ["AI Error"],
+            "Reason": [str(e)]
+        })
 
 # =====================================================
-# HEADER & SINGLE SEARCH
+# HEADER
 # =====================================================
-st.title("🔍 QE Lookup")
+st.title("SuperQE")
+
+st.caption(
+    "ATO Payday Super 2026 Qualifying Earnings Classification Engine"
+)
+
+st.success(
+    "🔒 No data stored. Files are processed in memory only and discarded immediately after results are returned."
+)
+
+# =====================================================
+# QE LOOKUP
+# =====================================================
+st.subheader("QE Lookup")
 
 search_text = st.text_input(
-    "",
-    placeholder='Type payment description e.g. "Annual Leave", "Parental Leave Half Pay"...'
+    "Payment Description",
+    placeholder="Annual Leave, Casual Loading, Redundancy Payment, Overtime...",
+    key="search_text"
 )
 
 if search_text:
+
     result = classify_payment(search_text)
-    classification = result.get("QE Classification", "Review")
+
+    classification = result.get(
+        "QE Classification",
+        "Review"
+    )
 
     if classification == "QE":
-        st.success(f"✅ {result.get('Matched Rule','Unknown')} → QE")
-    elif classification == "Not QE":
-        st.error(f"❌ {result.get('Matched Rule','Unknown')} → Not QE")
-    else:
-        st.warning(f"⚠️ {result.get('Matched Rule','Unknown')} → Review")
 
-    st.caption(result.get("Reason", ""))
+        st.success(
+            f"✅ {result.get('Matched Rule', 'Unknown')} → QE"
+        )
+
+    elif classification == "Not QE":
+
+        st.error(
+            f"❌ {result.get('Matched Rule', 'Unknown')} → Not QE"
+        )
+
+    else:
+
+        st.warning(
+            f"⚠️ {result.get('Matched Rule', 'Unknown')} → Review"
+        )
+
+    st.caption(
+        result.get("Reason", "")
+    )
 
 # =====================================================
 # BULK UPLOAD
