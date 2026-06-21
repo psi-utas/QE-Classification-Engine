@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
-from rapidfuzz import process, fuzz
+from openai import OpenAI
 from io import BytesIO
+import json
 
 # =====================================================
 # PAGE CONFIG
@@ -14,184 +15,149 @@ st.set_page_config(
 )
 
 # =====================================================
-# LOAD MASTER DATA
+# OPENAI
 # =====================================================
 
-@st.cache_data
-def load_master():
-
-    df = pd.read_excel(
-        "QE_Classification_Master_List.xlsx",
-        engine="openpyxl"
-    )
-
-    df.columns = (
-        df.columns
-        .astype(str)
-        .str.strip()
-    )
-
-    required = [
-        "Name",
-        "Type",
-        "Keywords"
-    ]
-
-    missing = [
-        c
-        for c in required
-        if c not in df.columns
-    ]
-
-    if missing:
-
-        st.error(
-            f"Missing columns: {', '.join(missing)}"
-        )
-
-        st.stop()
-
-    df = df.fillna("")
-
-    return df
-
-
 try:
-    master_df = load_master()
 
-except Exception as e:
+    client = OpenAI(
+        api_key=st.secrets["OPENAI_API_KEY"]
+    )
+
+except Exception:
 
     st.error(
-        f"Unable to load master file: {e}"
+        "OpenAI API key not found. Add OPENAI_API_KEY to Streamlit Secrets."
     )
 
     st.stop()
 
-
 # =====================================================
-# BUILD LOOKUP
-# =====================================================
-
-lookup = []
-
-for _, row in master_df.iterrows():
-
-    lookup.append({
-        "keyword": str(row["Name"]).lower(),
-        "name": row["Name"],
-        "type": row["Type"]
-    })
-
-    for keyword in str(row["Keywords"]).split(";"):
-
-        keyword = keyword.strip().lower()
-
-        if keyword:
-
-            lookup.append({
-                "keyword": keyword,
-                "name": row["Name"],
-                "type": row["Type"]
-            })
-
-
-# =====================================================
-# CLASSIFICATION FUNCTION
+# AI CLASSIFICATION
 # =====================================================
 
-def classify_payment(text):
+def classify_payment(description):
 
-    if pd.isna(text):
+    if pd.isna(description):
 
         return {
             "Matched Rule": "No Match Found",
-            "QE Classification": "Review"
+            "QE Classification": "Review",
+            "Reason": "Empty description"
         }
 
-    text = str(text).lower().strip()
+    description = str(description).strip()
 
-    if not text:
+    if description == "":
 
         return {
             "Matched Rule": "No Match Found",
-            "QE Classification": "Review"
+            "QE Classification": "Review",
+            "Reason": "Empty description"
         }
 
-    # ------------------------------------------
-    # Exact Match
-    # ------------------------------------------
+    prompt = f"""
+You are an Australian payroll specialist.
 
-    for item in lookup:
+Using ONLY ATO Payday Super 2026 Qualifying Earnings (QE) principles.
 
-        if text == item["keyword"]:
+Review the payment description and determine:
 
-            return {
-                "Matched Rule": item["name"],
-                "QE Classification": item["type"]
-            }
+1. Most likely payment type.
+2. Whether it is:
+   - QE
+   - Not QE
+   - Review
 
-    # ------------------------------------------
-    # Contains Match
-    # ------------------------------------------
+Examples:
 
-    matches = []
+Annual Leave = QE
+Sick Leave = QE
+Personal Leave = QE
+Family And Domestic Violence Leave = QE
+Commission = QE
 
-    for item in lookup:
+Parental Leave = Not QE
+Maternity Leave = Not QE
+Paternity Leave = Not QE
+Government Paid Parental Leave = Not QE
+Overtime = Not QE
+Jury Duty = Not QE
+Termination Payment = Not QE
 
-        keyword = item["keyword"]
+Car Allowance = Review
+Meal Allowance = Review
+Phone Allowance = Review
 
-        if keyword in text:
+Return ONLY valid JSON.
 
-            matches.append(
-                (
-                    len(keyword),
-                    item["name"],
-                    item["type"]
-                )
-            )
+{{
+  "matched_rule":"",
+  "classification":"QE|Not QE|Review",
+  "reason":""
+}}
 
-    if matches:
+Description:
+{description}
+"""
 
-        matches.sort(
-            key=lambda x: x[0],
-            reverse=True
+    try:
+
+        response = client.chat.completions.create(
+            model="gpt-5-mini",
+            temperature=0,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an Australian payroll "
+                        "and superannuation specialist."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
         )
 
-        best = matches[0]
+        content = (
+            response
+            .choices[0]
+            .message
+            .content
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+
+        result = json.loads(content)
 
         return {
-            "Matched Rule": best[1],
-            "QE Classification": best[2]
+            "Matched Rule":
+                result.get(
+                    "matched_rule",
+                    "No Match Found"
+                ),
+            "QE Classification":
+                result.get(
+                    "classification",
+                    "Review"
+                ),
+            "Reason":
+                result.get(
+                    "reason",
+                    ""
+                )
         }
 
-    # ------------------------------------------
-    # Fuzzy Match
-    # ------------------------------------------
+    except Exception as e:
 
-    match = process.extractOne(
-        text,
-        [x["keyword"] for x in lookup],
-        scorer=fuzz.token_set_ratio
-    )
-
-    if match and match[1] >= 85:
-
-        keyword = match[0]
-
-        for item in lookup:
-
-            if item["keyword"] == keyword:
-
-                return {
-                    "Matched Rule": item["name"],
-                    "QE Classification": item["type"]
-                }
-
-    return {
-        "Matched Rule": "No Match Found",
-        "QE Classification": "Review"
-    }
-
+        return {
+            "Matched Rule": "AI Error",
+            "QE Classification": "Review",
+            "Reason": str(e)
+        }
 
 # =====================================================
 # HEADER
@@ -201,7 +167,7 @@ st.title("🔍 QE Lookup")
 
 search_text = st.text_input(
     "",
-    placeholder='Type payment description e.g. "Parental Leave Half Pay", "Family Violence Leave", "FDVL", "PILON"...'
+    placeholder='Type payment description e.g. "Parental Leave Half Pay", "Family Violence Leave", "PILON"...'
 )
 
 # =====================================================
@@ -230,6 +196,12 @@ if search_text:
             f"⚠️ {result['Matched Rule']} → Review"
         )
 
+    if result["Reason"]:
+
+        st.caption(
+            result["Reason"]
+        )
+
 # =====================================================
 # BULK UPLOAD
 # =====================================================
@@ -243,7 +215,7 @@ st.info(
 )
 
 # =====================================================
-# TEMPLATE DOWNLOAD
+# TEMPLATE
 # =====================================================
 
 template_df = pd.DataFrame({
@@ -297,7 +269,7 @@ with st.expander("📋 Example Excel Format"):
     )
 
 # =====================================================
-# UPLOAD FILE
+# FILE UPLOAD
 # =====================================================
 
 uploaded_file = st.file_uploader(
@@ -348,7 +320,8 @@ if uploaded_file:
                 results.append({
                     "Description": row["Description"],
                     "Matched Rule": result["Matched Rule"],
-                    "QE Classification": result["QE Classification"]
+                    "QE Classification": result["QE Classification"],
+                    "Reason": result["Reason"]
                 })
 
                 progress.progress(
@@ -369,20 +342,12 @@ if uploaded_file:
                 result_df["QE Classification"] == "Review"
             ]
 
-            # =================================================
-            # METRICS
-            # =================================================
-
             col1, col2, col3, col4 = st.columns(4)
 
             col1.metric("Total", len(result_df))
             col2.metric("QE", len(qe_df))
             col3.metric("Not QE", len(not_qe_df))
             col4.metric("Review", len(review_df))
-
-            # =================================================
-            # RESULTS
-            # =================================================
 
             st.subheader("Results")
 
@@ -429,10 +394,6 @@ if uploaded_file:
                     hide_index=True,
                     use_container_width=True
                 )
-
-            # =================================================
-            # DOWNLOAD RESULTS
-            # =================================================
 
             output = BytesIO()
 
