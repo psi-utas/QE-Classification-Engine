@@ -8,7 +8,8 @@ import json
 st.set_page_config(
     page_title="SuperQE",
     page_icon="🔵",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 #force block
@@ -45,12 +46,6 @@ st.markdown("""
 
 
 # SIDEBAR
-
-st.set_page_config(
-    page_title="QE Lookup",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 with st.sidebar:
     st.subheader("Gemini API")
