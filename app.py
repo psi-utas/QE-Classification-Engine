@@ -229,8 +229,6 @@ def classify_bulk(input_df):
 # HEADER & SINGLE SEARCH
 # QE Lookup Card
 
-    
-with st.container(border=True):
 result_placeholder = st.container(border=True)
 
 with result_placeholder:
