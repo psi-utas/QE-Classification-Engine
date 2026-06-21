@@ -207,7 +207,7 @@ if search_text:
 # BULK UPLOAD
 # =====================================================
 
-/* st.divider()
+""" st.divider()
 
 st.subheader("📤 Bulk QE Classification")
 
@@ -453,4 +453,4 @@ if uploaded_file:
             )
 
 
-*/
+"""
