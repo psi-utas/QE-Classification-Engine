@@ -227,9 +227,6 @@ def classify_bulk(input_df):
 
 # HEADER & SINGLE SEARCH
 # QE Lookup Card
-
-with st.container(border=True):
-
     st.markdown("### 🔍 QE Lookup")
     st.caption("Search a payment description")
 
@@ -240,10 +237,14 @@ with st.container(border=True):
             placeholder="Annual Leave, Parental Leave, Family Violence..."
         )
 
-        submitted = st.form_submit_button(
-            "Search",
-            disabled=not search_text
-        )
+submitted = st.form_submit_button("Search")
+
+if submitted:
+    if not search_text.strip():
+        st.warning("Please enter a payment description.")
+    else:
+        result = classify_payment(search_text)
+
 
     # Run search
     if submitted and search_text:
