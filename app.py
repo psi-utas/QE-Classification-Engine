@@ -43,7 +43,7 @@ genai.configure(
     api_key=gemini_api_key
 )
 
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.1-flash-lite"
 
 model = genai.GenerativeModel(
     MODEL_NAME
