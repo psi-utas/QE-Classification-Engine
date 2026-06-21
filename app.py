@@ -68,15 +68,13 @@ generation_config = {
 # =====================================================
 # LOAD PROMPT
 # =====================================================
-with open("prompt.txt", "r", encoding="utf-8") as f:
-    PROMPT = f.read()
-    
-prompt = f"""
-{PROMPT}
+try:
+    with open("prompt.txt", "r", encoding="utf-8") as f:
+        PROMPT = f.read()
 
-Descriptions:
-{json.dumps(descriptions, ensure_ascii=False)}
-"""
+except Exception as e:
+    st.error(f"Unable to load prompt.txt: {e}")
+    st.stop()
 
 # =====================================================
 # FUNCTIONS
@@ -140,10 +138,14 @@ Descriptions:
             generation_config=generation_config
         )
 
-        results = json.loads(response.text.strip())
+        results = json.loads(
+            response.text.strip()
+        )
 
         if not isinstance(results, list):
-            raise Exception("Expected JSON array.")
+            raise Exception(
+                "Expected JSON array from Gemini."
+            )
 
         result_df = pd.DataFrame(results)
 
@@ -154,6 +156,7 @@ Descriptions:
         ]
 
         for col in required_columns:
+
             if col not in result_df.columns:
                 result_df[col] = ""
 
@@ -222,7 +225,7 @@ if search_text:
     )
 
 # =====================================================
-# BULK SECTION
+# BULK UPLOAD
 # =====================================================
 st.divider()
 
