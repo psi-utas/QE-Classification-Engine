@@ -45,6 +45,21 @@ st.markdown("""
 
 
 # SIDEBAR
+GEMINI_API_KEY = "AQ.Ab8RN6JSarEyUHkcsETbhmHdXX_S2qG0YcWrq7gcL-Xgl3yQ1w"
+
+genai.configure(api_key=GEMINI_API_KEY)
+
+MODEL_NAME = "gemini-3.1-flash-lite"
+
+model = genai.GenerativeModel(MODEL_NAME)
+
+generation_config = {
+    "temperature": 0,
+    "top_p": 0.1,
+    "top_k": 1,
+    "response_mime_type": "application/json"
+}
+"""
 with st.sidebar:
     st.subheader("Gemini API")
 
@@ -65,7 +80,7 @@ with st.sidebar:
 
 if not gemini_api_key:
     st.info("Enter your Gemini API Key to continue.")
-    st.stop()
+    st.stop() ##
 
 # GEMINI CONFIG
 genai.configure(api_key=gemini_api_key)
@@ -79,7 +94,7 @@ generation_config = {
     "top_k": 1,
     "response_mime_type": "application/json" 
 }
-
+"""
 # PROMPTS
 SINGLE_PROMPT = """
 You are a payroll classification engine.
