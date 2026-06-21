@@ -45,19 +45,39 @@ st.markdown("""
 
 
 # SIDEBAR
-GEMINI_API_KEY = "AQ.Ab8RN6K_tAWKo8il-WlQw8T-gKyoWYhMyiD15VN1jaynvfT6pA"
+with st.sidebar:
+    st.subheader("Gemini API")
 
-genai.configure(api_key=GEMINI_API_KEY)
+    st.link_button(
+        "Get Gemini API Key",
+        "https://aistudio.google.com/u/1/api-keys",
+        use_container_width=True
+    )
+
+    gemini_api_key = st.text_input(
+        "Gemini API Key",
+        type="password"
+    )
+
+    st.caption(
+        "Your API key is used only during this session."
+    )
+
+if not gemini_api_key:
+    st.info("Enter your Gemini API Key to continue.")
+    st.stop() ##
+
+# GEMINI CONFIG
+genai.configure(api_key=gemini_api_key)
 
 MODEL_NAME = "gemini-3.1-flash-lite"
-
 model = genai.GenerativeModel(MODEL_NAME)
 
 generation_config = {
     "temperature": 0,
     "top_p": 0.1,
     "top_k": 1,
-    "response_mime_type": "application/json"
+    "response_mime_type": "application/json" 
 }
 
 # PROMPTS
