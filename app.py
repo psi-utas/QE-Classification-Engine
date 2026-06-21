@@ -16,67 +16,71 @@ st.set_page_config(
 # DYNAMIC STYLING
 # =====================================================
 
-    st.markdown("""
-    <style>
+    # =====================================================
+# DYNAMIC STYLING
+# =====================================================
 
-    .stApp{
-        background:#f5f5f7;
-    }
+st.markdown("""
+<style>
 
-    #MainMenu {visibility:hidden;}
-    footer {visibility:hidden;}
-    header {visibility:hidden;}
+.stApp{
+    background:#f5f5f7;
+}
 
-    [data-testid="stSidebar"]{
-        background:white;
-        border-right:1px solid #e6e6e6;
-    }
+#MainMenu {visibility:hidden;}
+footer {visibility:hidden;}
+header {visibility:hidden;}
 
-    h1,h2,h3{
-        color:#1d1d1f !important;
-    }
+[data-testid="stSidebar"]{
+    background:white;
+    border-right:1px solid #e6e6e6;
+}
 
-    .hero-card{
-        background:linear-gradient(135deg,#ffffff,#f7f7f8);
-        border-radius:28px;
-        padding:45px;
-        border:1px solid #e6e6e8;
-        box-shadow:0 10px 30px rgba(0,0,0,.05);
-        text-align:center;
-        margin-bottom:30px;
-    }
+h1,h2,h3{
+    color:#1d1d1f !important;
+}
 
-    .hero-title{
-        font-size:3rem;
-        font-weight:700;
-        letter-spacing:-1px;
-        color:#1d1d1f;
-    }
+.hero-card{
+    background:linear-gradient(135deg,#ffffff,#f7f7f8);
+    border-radius:28px;
+    padding:45px;
+    border:1px solid #e6e6e8;
+    box-shadow:0 10px 30px rgba(0,0,0,.05);
+    text-align:center;
+    margin-bottom:30px;
+}
 
-    .hero-subtitle{
-        color:#6e6e73;
-        font-size:1.15rem;
-        margin-top:10px;
-    }
+.hero-title{
+    font-size:3rem;
+    font-weight:700;
+    letter-spacing:-1px;
+    color:#1d1d1f;
+}
 
-    div[data-testid="metric-container"]{
-        background:white;
-        border-radius:18px;
-        border:1px solid #ececec;
-        padding:18px;
-        box-shadow:0 4px 20px rgba(0,0,0,.04);
-    }
+.hero-subtitle{
+    color:#6e6e73;
+    font-size:1.15rem;
+    margin-top:10px;
+}
 
-    .footer{
-        margin-top:60px;
-        padding-top:25px;
-        border-top:1px solid #d2d2d7;
-        text-align:center;
-        color:#6e6e73;
-    }
+div[data-testid="metric-container"]{
+    background:white;
+    border-radius:18px;
+    border:1px solid #ececec;
+    padding:18px;
+    box-shadow:0 4px 20px rgba(0,0,0,.04);
+}
 
-    </style>
-    """, unsafe_allow_html=True)
+.footer{
+    margin-top:60px;
+    padding-top:25px;
+    border-top:1px solid #d2d2d7;
+    text-align:center;
+    color:#6e6e73;
+}
+
+</style>
+""", unsafe_allow_html=True)
 # =====================================================
 # SIDEBAR
 # =====================================================
