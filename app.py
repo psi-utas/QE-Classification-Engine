@@ -28,13 +28,16 @@ st.markdown("""
 <style>
 .superqe-banner {
     position: fixed;
-    top: 12px;
+    top: 20px; /* Slightly lowered to account for the larger font height */
     left: 50%;
     transform: translateX(-50%);
     z-index: 999;
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 42px; /* Bumped up from 20px */
+    font-weight: 800; /* Extra bold for more impact */
+    letter-spacing: -0.5px; /* Tightens the large text for a cleaner look */
     color: white;
+    text-shadow: 0px 4px 12px rgba(0, 0, 0, 0.3); /* Adds depth so it stands out against any background */
+    white-space: nowrap; /* Prevents the text from wrapping onto two lines */
 }
 .superqe-accent {
     color: #60a5fa;
@@ -46,9 +49,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
 # SIDEBAR
-
 with st.sidebar:
     st.subheader("Gemini API")
 
@@ -82,7 +83,6 @@ generation_config = {
     "top_k": 1,
     "response_mime_type": "application/json"
 }
-
 
 # PROMPTS
 SINGLE_PROMPT = """
@@ -504,7 +504,7 @@ st.markdown(
     <div style="text-align: center; padding: 10px; color: #666666; font-size: 0.85rem;">
         <p style="margin-bottom: 4px;">🛡️ <b>No data stored.</b> Files you upload are processed in memory only and discarded immediately after results are returned. Nothing is saved, logged, or transmitted to any third party.</p>
         <p style="font-size: 0.8rem; color: #888888; margin-top: 0;">Designed & Developed by Maruf, Sebgatullah</p>
-    Powered by Google Gemini
+    Powered by Google Gemini 
     </div>
     """,
     unsafe_allow_html=True
