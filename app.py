@@ -66,24 +66,16 @@ generation_config = {
 }
 
 # =====================================================
-# PROMPT
+# LOAD PROMPT
 # =====================================================
-PROMPT = """
-PASTE YOUR FULL QE RULES HERE
+with open("prompt.txt", "r", encoding="utf-8") as f:
+    PROMPT = f.read()
+    
+prompt = f"""
+{PROMPT}
 
-Return JSON only.
-
-Always return a JSON array.
-
-For every description provided return:
-
-[
-  {
-    "Description": "string",
-    "QE Classification": "QE or Not QE or Review",
-    "Reason": "string"
-  }
-]
+Descriptions:
+{json.dumps(descriptions, ensure_ascii=False)}
 """
 
 # =====================================================
