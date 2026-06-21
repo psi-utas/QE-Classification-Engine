@@ -16,57 +16,6 @@ st.set_page_config(
 # DYNAMIC STYLING
 # =====================================================
 
-if st.session_state.dark_mode:
-
-    st.markdown("""
-    <style>
-
-    .stApp {
-        background:#000000;
-        color:white;
-    }
-
-    [data-testid="stSidebar"] {
-        background:#111111;
-    }
-
-    h1,h2,h3,h4,h5,h6 {
-        color:white !important;
-    }
-
-    p,div,span,label {
-        color:white !important;
-    }
-
-    div[data-testid="metric-container"]{
-        background:#181818;
-        border:1px solid #333;
-        border-radius:20px;
-        padding:20px;
-    }
-
-    .hero-card{
-        background:linear-gradient(135deg,#111111,#1b1b1b);
-        border:1px solid #333;
-        border-radius:28px;
-        padding:40px;
-        text-align:center;
-        margin-bottom:30px;
-    }
-
-    .footer{
-        margin-top:60px;
-        border-top:1px solid #333;
-        padding-top:25px;
-        text-align:center;
-        color:#aaaaaa;
-    }
-
-    </style>
-    """, unsafe_allow_html=True)
-
-else:
-
     st.markdown("""
     <style>
 
