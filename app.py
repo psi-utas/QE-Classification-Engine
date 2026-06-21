@@ -227,16 +227,22 @@ def classify_bulk(input_df):
 
 # HEADER & SINGLE SEARCH
 # =====================================================
-st.title("🔍 QE Lookup")
+with st.container(border=True):
 
-with st.form("qe_search_form"):
-    search_text = st.text_input(
-        "",
-        placeholder='Type payment description e.g. "Annual Leave", "Parental Leave"...'
-    )
+    st.markdown("### 🔍 QE Lookup")
+    st.caption("Search a payment description")
 
-    submitted = st.form_submit_button("Search")
+    with st.form("qe_search_form"):
+        search_text = st.text_input(
+            "",
+            placeholder='Annual Leave, Parental Leave, Family Violence...'
+        )
 
+        submitted = st.form_submit_button(
+            "Search",
+            use_container_width=False
+        )
+        
 if submitted and search_text:
     loader_placeholder = st.empty()
 
