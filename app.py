@@ -55,51 +55,45 @@ model = genai.GenerativeModel(
 
 def classify_payment(description):
 
-    prompt = f"""
-You are an Australian payroll and superannuation specialist.
+    
+prompt = f"""
+You are a payroll classification engine.
 
-Using ONLY ATO Payday Super 2026 Qualifying Earnings (QE) principles,
-classify the payroll payment description below.
+Your ONLY source of truth is the Australian Taxation Office page:
 
-Return JSON only.
+https://www.ato.gov.au/businesses-and-organisations/super-for-employers/payday-super/paying-super-on-payday/what-payments-are-qualifying-earnings
+
+Rules:
+
+1. Use ONLY information contained on that page.
+2. Do NOT use external knowledge.
+3. Do NOT infer.
+4. Do NOT guess.
+5. If the classification is not clearly supported by that page:
+   classify as Review.
+6. If confidence is below 95%:
+   classify as Review.
+7. Reason must be 5 words or fewer.
+8. Return JSON only.
+9. Classification must be one of:
+
+QE
+Not QE
+Review
+
+Output format:
 
 {{
   "Matched Rule":"",
   "QE Classification":"QE|Not QE|Review",
   "Reason":""
 }}
-Guidance:
-
-QE Examples:
-- Ordinary Time Earnings
-- Annual Leave
-- Sick Leave
-- Personal Leave
-- Family and Domestic Violence Leave
-- Commissions
-- Performance Bonus
-- Casual Loading
-- Shift Penalties
-
-Not QE Examples:
-- Overtime
-- Parental Leave
-- Maternity Leave
-- Paternity Leave
-- Jury Duty
-- Government Paid Parental Leave
-- Genuine Redundancy
-- Employee Termination Payments
-
-Review Examples:
-- Car Allowance
-- Phone Allowance
-- Tool Allowance
-- Meal Allowance
 
 Description:
+
 {description}
 """
+
 
     try:
 
@@ -145,65 +139,35 @@ def classify_bulk(input_df):
     )
 
     prompt = f"""
-You are an Australian payroll and superannuation specialist.
 
-Using ONLY ATO Payday Super 2026 Qualifying Earnings principles.
+prompt = f"""
+You are a payroll classification engine.
 
-Classify EACH payroll description below.
+Use ONLY the ATO Qualifying Earnings page.
 
-Allowed classifications:
+Rules:
 
-QE
-Not QE
-Review
+- No external knowledge.
+- No assumptions.
+- If uncertain return Review.
+- Reason maximum 3 words.
+- Return ONLY JSON array.
 
-Return ONLY a JSON array.
-
-Example:
+Output:
 
 [
   {{
-    "Description":"Annual Leave",
-    "Matched Rule":"Annual Leave",
-    "QE Classification":"QE",
-    "Reason":"Paid leave forms part of QE."
+    "Description":"",
+    "Matched Rule":"",
+    "QE Classification":"QE|Not QE|Review",
+    "Reason":""
   }}
 ]
-
-Guidance:
-
-QE Examples:
-- Ordinary Time Earnings
-- Annual Leave
-- Sick Leave
-- Personal Leave
-- Family and Domestic Violence Leave
-- Commissions
-- Performance Bonus
-- Casual Loading
-- Shift Penalties
-
-Not QE Examples:
-- Overtime
-- Parental Leave
-- Maternity Leave
-- Paternity Leave
-- Jury Duty
-- Government Paid Parental Leave
-- Genuine Redundancy
-- Employee Termination Payments
-
-Review Examples:
-- Car Allowance
-- Phone Allowance
-- Tool Allowance
-- Meal Allowance
 
 Descriptions:
 
 {description_text}
 """
-
     response = model.generate_content(
         prompt
     )
