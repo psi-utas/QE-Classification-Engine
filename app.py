@@ -21,7 +21,6 @@ header[data-testid="stHeader"] {
 """, unsafe_allow_html=True)
 
 #title
-
 st.markdown("""
 <style>
 .superqe-banner {
@@ -43,6 +42,7 @@ st.markdown("""
     Super<span class="superqe-accent">QE</span>
 </div>
 """, unsafe_allow_html=True)
+st.caption("Powered by Google Gemini")
 
 # SIDEBAR
 with st.sidebar:
