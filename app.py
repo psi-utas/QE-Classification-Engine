@@ -279,7 +279,7 @@ if uploaded_file:
         st.error("Excel file must contain a Description column.")
     else:
         # BUTTON ADDED HERE: Only run the heavy logic when explicitly triggered
-        submit_clicked = st.button("🚀 SUBMIT TO AI", type="primary")
+        submit_clicked = st.button("Process File", type="primary")
         
         # If the button is clicked, compute results and save to st.session_state
         if submit_clicked:
