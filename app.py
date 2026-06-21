@@ -264,9 +264,11 @@ st.download_button(
 
 uploaded_file = st.file_uploader("Upload Completed Template", type=["xlsx"])
 
-# PROCESS FILE (WITH SUBMIT BUTTON AND STATE HANDLING)
+# =====================================================
+# PROCESS FILE (FIXED STATE HANDLING)
+# =====================================================
 if uploaded_file:
-    # IMPROVEMENT: Clear out historical results if a brand new file is detected
+    # Clear out historical results if a brand new file is detected
     if "current_file" not in st.session_state or st.session_state["current_file"] != uploaded_file.name:
         st.session_state["current_file"] = uploaded_file.name
         if "bulk_result" in st.session_state:
@@ -278,21 +280,22 @@ if uploaded_file:
     if "Description" not in input_df.columns:
         st.error("Excel file must contain a Description column.")
     else:
-        submit_clicked = st.button("Process File", type="primary")
-        
-        if submit_clicked:
-            try:
-                with st.spinner("Classifying file..."):
-                    processed_df = classify_bulk(input_df)
-                    st.session_state["bulk_result"] = processed_df
-                    st.success("Analysis complete!")
-            except Exception as e:
-                st.error(f"Classification Error: {e}")
+        # Only show the process button if we haven't successfully processed the file yet
+        if "bulk_result" not in st.session_state:
+            if st.button("Process File", type="primary"):
+                try:
+                    with st.spinner("Classifying file..."):
+                        processed_df = classify_bulk(input_df)
+                        st.session_state["bulk_result"] = processed_df
+                        st.success("Analysis complete!")
+                        st.rerun() # Force a rerun to clean up layout states safely
+                except Exception as e:
+                    st.error(f"Classification Error: {e}")
 
+        # Display results if they exist in state (Independent of the button click state!)
         if "bulk_result" in st.session_state:
             result_df = st.session_state["bulk_result"]
 
-            # Safe filtering with fallback column structures if AI forgets a field
             if "QE Classification" not in result_df.columns:
                 result_df["QE Classification"] = "Review"
 
@@ -337,3 +340,15 @@ if uploaded_file:
                 if "bulk_result" in st.session_state:
                     del st.session_state["bulk_result"]
                 st.rerun()
+
+# FOOTER BANNER
+st.markdown("---")
+st.markdown(
+    """
+    <div style="text-align: center; padding: 10px; color: #666666; font-size: 0.85rem;">
+        <p style="margin-bottom: 4px;">🛡️ <b>No data stored.</b> Files you upload are processed in memory only and discarded immediately after results are returned. Nothing is saved, logged, or transmitted to any third party.</p>
+        <p style="font-size: 0.8rem; color: #888888; margin-top: 0;">Designed & Developed by Maruf, Sebgatullah</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
