@@ -4,6 +4,21 @@ import google.generativeai as genai
 from io import BytesIO
 import json
 
+
+st.write("App Loaded")
+
+if gemini_api_key:
+    st.write("Gemini Key Loaded")
+
+if st.button("Test Gemini"):
+
+    response = model.generate_content(
+        "What is annual leave?"
+    )
+
+    st.write(response.text)
+
+
 # =====================================================
 # PAGE CONFIG
 # =====================================================
