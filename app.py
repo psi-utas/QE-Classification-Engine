@@ -35,7 +35,6 @@ genai.configure(api_key=gemini_api_key)
 MODEL_NAME = "gemini-3.1-flash-lite"
 model = genai.GenerativeModel(MODEL_NAME)
 
-# IMPROVEMENT: Forced the model to strictly output valid JSON structures natively
 generation_config = {
     "temperature": 0,
     "top_p": 0.1,
@@ -116,10 +115,9 @@ Return format JSON schema:
     "QE Classification": "QE or Not QE or Review",
     "Reason": "string"
 }
-
-
 """
 
+# FIX: Added "QE Classification" to the BULK_PROMPT return format schema
 BULK_PROMPT = """
 You are a payroll classification engine.
 Use ONLY ATO Payday Super 2026 Qualifying Earnings concepts and
@@ -188,6 +186,7 @@ Return format JSON schema:
 [
   {
     "Description": "string",
+    "QE Classification": "QE or Not QE or Review",
     "Matched Rule": "string",
     "Reason": "string"
   }
@@ -272,16 +271,20 @@ uploaded_file = st.file_uploader("Upload Completed Template", type=["xlsx"])
 # PROCESS FILE (WITH SUBMIT BUTTON AND STATE HANDLING)
 # =====================================================
 if uploaded_file:
+    # IMPROVEMENT: Clear out historical results if a brand new file is detected
+    if "current_file" not in st.session_state or st.session_state["current_file"] != uploaded_file.name:
+        st.session_state["current_file"] = uploaded_file.name
+        if "bulk_result" in st.session_state:
+            del st.session_state["bulk_result"]
+
     input_df = pd.read_excel(uploaded_file, engine="openpyxl")
     input_df.columns = [str(col).strip() for col in input_df.columns]
 
     if "Description" not in input_df.columns:
         st.error("Excel file must contain a Description column.")
     else:
-        # BUTTON ADDED HERE: Only run the heavy logic when explicitly triggered
         submit_clicked = st.button("Process File", type="primary")
         
-        # If the button is clicked, compute results and save to st.session_state
         if submit_clicked:
             try:
                 with st.spinner("Classifying file..."):
@@ -291,9 +294,12 @@ if uploaded_file:
             except Exception as e:
                 st.error(f"Classification Error: {e}")
 
-        # If results exist in the session state, render them seamlessly
         if "bulk_result" in st.session_state:
             result_df = st.session_state["bulk_result"]
+
+            # Safe filtering with fallback column structures if AI forgets a field
+            if "QE Classification" not in result_df.columns:
+                result_df["QE Classification"] = "Review"
 
             qe_df = result_df[result_df["QE Classification"] == "QE"]
             not_qe_df = result_df[result_df["QE Classification"] == "Not QE"]
@@ -332,7 +338,7 @@ if uploaded_file:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
             
-            # Reset button to allow a new clean file run later if needed
             if st.button("🧹 Clear Results"):
-                del st.session_state["bulk_result"]
+                if "bulk_result" in st.session_state:
+                    del st.session_state["bulk_result"]
                 st.rerun()
