@@ -92,7 +92,6 @@ Output format:
 Description:
 
 {description}
-"""
 
 
     try:
