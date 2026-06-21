@@ -227,65 +227,152 @@ def classify_bulk(input_df):
 
 # HEADER & SINGLE SEARCH
 # =====================================================
+# ------------------------
+# QE Lookup Card
+# ------------------------
+
 with st.container(border=True):
 
     st.markdown("### 🔍 QE Lookup")
     st.caption("Search a payment description")
 
     with st.form("qe_search_form"):
+
         search_text = st.text_input(
             "",
-            placeholder='Annual Leave, Parental Leave, Family Violence...'
+            placeholder="Annual Leave, Parental Leave, Family Violence..."
         )
 
         submitted = st.form_submit_button(
             "Search",
-            use_container_width=False
+            disabled=not search_text
         )
-        
-if submitted and search_text:
-    loader_placeholder = st.empty()
 
-    with loader_placeholder.container():
-        st.markdown(
-            """
-            <div style="display:flex;align-items:center;gap:15px;">
-                <div class="spinner" style="
-                    border:4px solid rgba(0,0,0,0.1);
-                    width:36px;
-                    height:36px;
-                    border-radius:50%;
-                    border-left-color:#0068c9;
-                    animation:spin 1s linear infinite;
-                "></div>
-                <div style="font-weight:100;color:#0068c9;">
-                    ✨ Consulting the classification engine...
+    # Run search
+    if submitted and search_text:
+
+        loader_placeholder = st.empty()
+
+        # Loader inside card
+        with loader_placeholder:
+            st.markdown(
+                """
+                <div style="
+                    display:flex;
+                    align-items:center;
+                    gap:12px;
+                    padding:10px 0;
+                    color:#60a5fa;
+                ">
+                    <div style="
+                        border:3px solid rgba(255,255,255,0.15);
+                        width:22px;
+                        height:22px;
+                        border-radius:50%;
+                        border-left-color:#60a5fa;
+                        animation:spin 0.8s linear infinite;
+                    ">
+                    </div>
+
+                    <span>
+                        Consulting classification engine...
+                    </span>
                 </div>
-            </div>
-            <style>
+
+                <style>
                 @keyframes spin {
-                    0% {transform: rotate(0deg);}
-                    100% {transform: rotate(360deg);}
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
                 }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    result = classify_payment(search_text)
+        # Classification
+        result = classify_payment(search_text)
 
-    loader_placeholder.empty()
+        # Remove loader
+        loader_placeholder.empty()
 
-    classification = result.get("QE Classification", "Review")
+        classification = result.get("QE Classification", "Review")
+        rule = result.get("Matched Rule", "Unknown")
+        reason = result.get("Reason", "")
 
-    if classification == "QE":
-        st.success(f"✅ {result.get('Matched Rule','Unknown')} → QE")
-    elif classification == "Not QE":
-        st.error(f"❌ {result.get('Matched Rule','Unknown')} → Not QE")
-    else:
-        st.warning(f"⚠️ {result.get('Matched Rule','Unknown')} → Review")
+        st.divider()
 
-    st.caption(result.get("Reason", ""))
+        # Result card
+        if classification == "QE":
+            st.markdown(
+                f"""
+                <div style="
+                    padding:16px;
+                    border-radius:12px;
+                    border-left:4px solid #22c55e;
+                    background:rgba(34,197,94,0.08);
+                    margin-top:10px;
+                ">
+                    <div style="font-size:18px;font-weight:600;color:#22c55e;">
+                        ✅ QE
+                    </div>
+                    <div style="margin-top:6px;">
+                        <strong>{rule}</strong>
+                    </div>
+                    <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+                        {reason}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        elif classification == "Not QE":
+            st.markdown(
+                f"""
+                <div style="
+                    padding:16px;
+                    border-radius:12px;
+                    border-left:4px solid #ef4444;
+                    background:rgba(239,68,68,0.08);
+                    margin-top:10px;
+                ">
+                    <div style="font-size:18px;font-weight:600;color:#ef4444;">
+                        ❌ Not QE
+                    </div>
+                    <div style="margin-top:6px;">
+                        <strong>{rule}</strong>
+                    </div>
+                    <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+                        {reason}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        else:
+            st.markdown(
+                f"""
+                <div style="
+                    padding:16px;
+                    border-radius:12px;
+                    border-left:4px solid #f59e0b;
+                    background:rgba(245,158,11,0.08);
+                    margin-top:10px;
+                ">
+                    <div style="font-size:18px;font-weight:600;color:#f59e0b;">
+                        ⚠️ Review Required
+                    </div>
+                    <div style="margin-top:6px;">
+                        <strong>{rule}</strong>
+                    </div>
+                    <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+                        {reason}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 # BULK UPLOAD
 st.divider()
