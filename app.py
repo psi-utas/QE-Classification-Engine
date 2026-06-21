@@ -1,23 +1,8 @@
 import streamlit as st
 import pandas as pd
 import google.generativeai as genai
-from io import BytesIO
 import json
-
-
-st.write("App Loaded")
-
-if gemini_api_key:
-    st.write("Gemini Key Loaded")
-
-if st.button("Test Gemini"):
-
-    response = model.generate_content(
-        "What is annual leave?"
-    )
-
-    st.write(response.text)
-
+from io import BytesIO
 
 # =====================================================
 # PAGE CONFIG
@@ -42,31 +27,80 @@ with st.sidebar:
         type="password"
     )
 
-if not gemini_api_key:
+# =====================================================
+# GEMINI SETUP
+# =====================================================
 
-    st.info(
-        "Please enter your Gemini API Key in the sidebar."
+model = None
+
+if gemini_api_key:
+
+    try:
+
+        genai.configure(
+            api_key=gemini_api_key
+        )
+
+        # Safer model for free tier
+        model = genai.GenerativeModel(
+            "gemini-1.5-flash"
+        )
+
+        st.sidebar.success(
+            "✅ Gemini Connected"
+        )
+
+    except Exception as e:
+
+        st.sidebar.error(
+            f"Gemini Error: {e}"
+        )
+
+else:
+
+    st.sidebar.info(
+        "Enter your Gemini API Key"
     )
 
-    st.stop()
-
 # =====================================================
-# GEMINI CONFIGURATION
+# TEST BUTTON
 # =====================================================
 
-genai.configure(
-    api_key=gemini_api_key
-)
+if model:
 
-model = genai.GenerativeModel(
-    "gemini-2.5-flash"
-)
+    if st.sidebar.button(
+        "Test Gemini"
+    ):
+
+        try:
+
+            response = model.generate_content(
+                "Say hello"
+            )
+
+            st.sidebar.success(
+                response.text
+            )
+
+        except Exception as e:
+
+            st.sidebar.error(
+                str(e)
+            )
 
 # =====================================================
 # CLASSIFICATION FUNCTION
 # =====================================================
 
 def classify_payment(description):
+
+    if model is None:
+
+        return {
+            "Matched Rule": "No AI Model",
+            "QE Classification": "Review",
+            "Reason": "Gemini API key not configured"
+        }
 
     if pd.isna(description):
 
@@ -76,7 +110,9 @@ def classify_payment(description):
             "Reason": "Empty description"
         }
 
-    description = str(description).strip()
+    description = str(
+        description
+    ).strip()
 
     if description == "":
 
@@ -87,12 +123,13 @@ def classify_payment(description):
         }
 
     prompt = f"""
-You are an Australian payroll and superannuation specialist.
+You are an Australian payroll expert.
 
-Using ATO Payday Super 2026 Qualifying Earnings (QE) principles,
-classify the payroll payment description below.
+Using ATO Payday Super 2026 qualifying earnings principles.
 
-Return ONLY valid JSON.
+Classify the payroll item below.
+
+Return VALID JSON only.
 
 {{
   "matched_rule":"",
@@ -100,36 +137,7 @@ Return ONLY valid JSON.
   "reason":""
 }}
 
-Guidance:
-
-QE Examples:
-- Ordinary Time Earnings
-- Annual Leave
-- Sick Leave
-- Personal Leave
-- Family and Domestic Violence Leave
-- Commissions
-- Performance Bonus
-- Casual Loading
-- Shift Penalties
-
-Not QE Examples:
-- Overtime
-- Parental Leave
-- Maternity Leave
-- Paternity Leave
-- Jury Duty
-- Government Paid Parental Leave
-- Genuine Redundancy
-- Employee Termination Payments
-
-Review Examples:
-- Car Allowance
-- Phone Allowance
-- Tool Allowance
-- Meal Allowance
-
-Payment Description:
+Description:
 {description}
 """
 
@@ -146,7 +154,19 @@ Payment Description:
             .strip()
         )
 
-        result = json.loads(content)
+        try:
+
+            result = json.loads(
+                content
+            )
+
+        except:
+
+            return {
+                "Matched Rule": "AI Response Error",
+                "QE Classification": "Review",
+                "Reason": content
+            }
 
         return {
             "Matched Rule":
