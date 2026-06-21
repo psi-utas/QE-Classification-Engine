@@ -58,9 +58,8 @@ def classify_payment(description):
     prompt = f"""
 You are an Australian payroll and superannuation specialist.
 
-Using ATO Payday Super 2026 Qualifying Earnings principles.
-
-Classify the payment description.
+Using ONLY ATO Payday Super 2026 Qualifying Earnings (QE) principles,
+classify the payroll payment description below.
 
 Return JSON only.
 
@@ -69,6 +68,34 @@ Return JSON only.
   "QE Classification":"QE|Not QE|Review",
   "Reason":""
 }}
+Guidance:
+
+QE Examples:
+- Ordinary Time Earnings
+- Annual Leave
+- Sick Leave
+- Personal Leave
+- Family and Domestic Violence Leave
+- Commissions
+- Performance Bonus
+- Casual Loading
+- Shift Penalties
+
+Not QE Examples:
+- Overtime
+- Parental Leave
+- Maternity Leave
+- Paternity Leave
+- Jury Duty
+- Government Paid Parental Leave
+- Genuine Redundancy
+- Employee Termination Payments
+
+Review Examples:
+- Car Allowance
+- Phone Allowance
+- Tool Allowance
+- Meal Allowance
 
 Description:
 {description}
