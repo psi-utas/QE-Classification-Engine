@@ -15,21 +15,42 @@ st.set_page_config(
 # =====================================================
 # SIDEBAR
 # =====================================================
+# =====================================================
+# SIDEBAR
+# =====================================================
 with st.sidebar:
-    st.markdown("### Gemini API Key")
+    st.header("AI Settings")
 
-    st.link_button(
-        "Get a Gemini API key",
-        "https://aistudio.google.com/u/1/api-keys",
-        use_container_width=True,
-    )
+    st.markdown("### Gemini API Key") 
 
     gemini_api_key = st.text_input(
         "Gemini API Key",
         type="password",
         label_visibility="collapsed",
-        placeholder="Paste your Gemini API Key",
+        placeholder="Paste your Gemini API Key"
     )
+    st.markdown(
+        """
+        <a href="https://aistudio.google.com/u/1/api-keys"
+           target="_blank">
+           Get a Gemini API key
+        </a>
+        """,
+        unsafe_allow_html=True
+    )
+
+    use_key = st.button(
+        "Use Gemini Key",
+        type="primary",
+        use_container_width=True
+    )
+
+# Stop app until user clicks button with a key entered
+if not gemini_api_key or not use_key:
+    st.info(
+        "Enter your Gemini API Key in the sidebar, then click 'Use Gemini Key'."
+    )
+    st.stop()
 # =====================================================
 # GEMINI CONFIG
 # =====================================================
