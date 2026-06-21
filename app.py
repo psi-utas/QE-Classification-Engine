@@ -45,7 +45,7 @@ st.markdown("""
 
 
 # SIDEBAR
-GEMINI_API_KEY = "AQ.Ab8RN6JSarEyUHkcsETbhmHdXX_S2qG0YcWrq7gcL-Xgl3yQ1w"
+GEMINI_API_KEY = "AQ.Ab8RN6K_tAWKo8il-WlQw8T-gKyoWYhMyiD15VN1jaynvfT6pA"
 
 genai.configure(api_key=GEMINI_API_KEY)
 
