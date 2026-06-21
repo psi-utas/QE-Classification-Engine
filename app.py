@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # =====================================================
-# SIMPLE STYLING
+# STYLING
 # =====================================================
 st.markdown("""
 <style>
@@ -38,8 +38,7 @@ with st.sidebar:
 
     gemini_api_key = st.text_input(
         "Gemini API Key",
-        type="password",
-        key="gemini_api_key"
+        type="password"
     )
 
     st.caption(
@@ -55,7 +54,7 @@ if not gemini_api_key:
 # =====================================================
 genai.configure(api_key=gemini_api_key)
 
-MODEL_NAME = "gemini-3.1-flash-lite"
+MODEL_NAME = "gemini-2.5-flash"
 
 model = genai.GenerativeModel(MODEL_NAME)
 
@@ -67,54 +66,25 @@ generation_config = {
 }
 
 # =====================================================
-# PROMPTS
+# MASTER PROMPT
 # =====================================================
 PROMPT = """
+You are a payroll classification engine.
 
+PASTE YOUR FULL QE CLASSIFICATION RULES HERE.
 
-Return format JSON schema:
+Return JSON only.
 
-{
-
-    "Matched
-
-Rule": "string",
-
-    "QE
-
-Classification": "QE or Not QE or Review",
-
-   "Reason": "string"
-
-}
-
-"""
-
-PROMPT = """
-
- 
-Return format JSON schema:
+For every payment description return:
 
 [
-
   {
-
-   "Description": "string",
-
-    "QE
-
-Classification": "QE or Not QE or Review",
-
-    "Matched
-
-Rule": "string",
-
-   "Reason": "string"
-
+    "Description": "string",
+    "QE Classification": "QE or Not QE or Review",
+    "Matched Rule": "string",
+    "Reason": "string"
   }
-
 ]
-
 """
 
 # =====================================================
@@ -127,8 +97,8 @@ def classify_payment(description):
         prompt = f"""
 {PROMPT}
 
-Description:
-{description}
+Descriptions:
+{json.dumps([description], ensure_ascii=False)}
 """
 
         response = model.generate_content(
@@ -136,15 +106,24 @@ Description:
             generation_config=generation_config
         )
 
-        text = response.text.strip()
+        results = json.loads(response.text.strip())
 
-        return json.loads(text)
+        if isinstance(results, list) and len(results) > 0:
+            return results[0]
+
+        return {
+            "Description": description,
+            "QE Classification": "Review",
+            "Matched Rule": "Invalid Response",
+            "Reason": "No result returned"
+        }
 
     except Exception as e:
 
         return {
-            "Matched Rule": "AI Error",
+            "Description": description,
             "QE Classification": "Review",
+            "Matched Rule": "AI Error",
             "Reason": str(e)
         }
 
@@ -160,16 +139,11 @@ def classify_bulk(input_df):
             .tolist()
         )
 
-        description_text = "\n".join(
-            f"{i+1}. {d}"
-            for i, d in enumerate(descriptions)
-        )
-
         prompt = f"""
 {PROMPT}
 
 Descriptions:
-{description_text}
+{json.dumps(descriptions, ensure_ascii=False)}
 """
 
         response = model.generate_content(
@@ -177,11 +151,25 @@ Descriptions:
             generation_config=generation_config
         )
 
-        text = response.text.strip()
+        results = json.loads(response.text.strip())
 
-        results = json.loads(text)
+        if not isinstance(results, list):
+            raise Exception("Model returned non-list JSON.")
 
-        return pd.DataFrame(results)
+        result_df = pd.DataFrame(results)
+
+        required_columns = [
+            "Description",
+            "QE Classification",
+            "Matched Rule",
+            "Reason"
+        ]
+
+        for col in required_columns:
+            if col not in result_df.columns:
+                result_df[col] = ""
+
+        return result_df
 
     except Exception as e:
 
@@ -206,14 +194,13 @@ st.success(
 )
 
 # =====================================================
-# QE LOOKUP
+# SINGLE LOOKUP
 # =====================================================
 st.subheader("QE Lookup")
 
 search_text = st.text_input(
     "Payment Description",
-    placeholder="Annual Leave, Casual Loading, Redundancy Payment, Overtime...",
-    key="search_text"
+    placeholder="Annual Leave, Casual Loading, Redundancy Payment, Overtime..."
 )
 
 if search_text:
@@ -225,26 +212,40 @@ if search_text:
         "Review"
     )
 
+    matched_rule = result.get(
+        "Matched Rule",
+        "Unknown"
+    )
+
+    reason = result.get(
+        "Reason",
+        ""
+    )
+
     if classification == "QE":
 
         st.success(
-            f"✅ {result.get('Matched Rule', 'Unknown')} → QE"
+            f"✅ {matched_rule} → QE"
         )
 
     elif classification == "Not QE":
 
         st.error(
-            f"❌ {result.get('Matched Rule', 'Unknown')} → Not QE"
+            f"❌ {matched_rule} → Not QE"
         )
 
     else:
 
         st.warning(
-            f"⚠️ {result.get('Matched Rule', 'Unknown')} → Review"
+            f"⚠️ {matched_rule} → Review"
         )
 
-    st.caption(
-        result.get("Reason", "")
+    st.caption(reason)
+
+    st.dataframe(
+        pd.DataFrame([result]),
+        use_container_width=True,
+        hide_index=True
     )
 
 # =====================================================
@@ -253,10 +254,22 @@ if search_text:
 st.divider()
 st.subheader("📤 Bulk QE Classification")
 
-template_df = pd.DataFrame({"Description": []})
+template_df = pd.DataFrame(
+    {"Description": []}
+)
+
 template_output = BytesIO()
-with pd.ExcelWriter(template_output, engine="openpyxl") as writer:
-    template_df.to_excel(writer, sheet_name="Template", index=False)
+
+with pd.ExcelWriter(
+    template_output,
+    engine="openpyxl"
+) as writer:
+
+    template_df.to_excel(
+        writer,
+        sheet_name="Template",
+        index=False
+    )
 
 st.download_button(
     "📄 Download Template",
@@ -265,71 +278,178 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-uploaded_file = st.file_uploader("Upload Completed Template", type=["xlsx"])
+uploaded_file = st.file_uploader(
+    "Upload Completed Template",
+    type=["xlsx"]
+)
 
 # =====================================================
-# PROCESS FILE (WITH SUBMIT BUTTON AND STATE HANDLING)
+# PROCESS BULK FILE
 # =====================================================
 if uploaded_file:
-    # IMPROVEMENT: Clear out historical results if a brand new file is detected
-    if "current_file" not in st.session_state or st.session_state["current_file"] != uploaded_file.name:
+
+    if (
+        "current_file" not in st.session_state
+        or st.session_state["current_file"] != uploaded_file.name
+    ):
+
         st.session_state["current_file"] = uploaded_file.name
+
         if "bulk_result" in st.session_state:
             del st.session_state["bulk_result"]
 
-    input_df = pd.read_excel(uploaded_file, engine="openpyxl")
-    input_df.columns = [str(col).strip() for col in input_df.columns]
+    input_df = pd.read_excel(
+        uploaded_file,
+        engine="openpyxl"
+    )
+
+    input_df.columns = [
+        str(col).strip()
+        for col in input_df.columns
+    ]
 
     if "Description" not in input_df.columns:
-        st.error("Excel file must contain a Description column.")
+
+        st.error(
+            "Excel file must contain a Description column."
+        )
+
     else:
-        submit_clicked = st.button("Process File", type="primary")
-        
-        if submit_clicked:
+
+        if st.button(
+            "Process File",
+            type="primary"
+        ):
+
             try:
-                with st.spinner("Classifying file..."):
-                    processed_df = classify_bulk(input_df)
-                    st.session_state["bulk_result"] = processed_df
-                    st.success("Analysis complete!")
+
+                with st.spinner(
+                    "Classifying file..."
+                ):
+
+                    st.session_state["bulk_result"] = (
+                        classify_bulk(input_df)
+                    )
+
+                st.success(
+                    "Analysis complete!"
+                )
+
             except Exception as e:
-                st.error(f"Classification Error: {e}")
+
+                st.error(
+                    f"Classification Error: {e}"
+                )
 
         if "bulk_result" in st.session_state:
-            result_df = st.session_state["bulk_result"]
 
-            # Safe filtering with fallback column structures if AI forgets a field
-            if "QE Classification" not in result_df.columns:
-                result_df["QE Classification"] = "Review"
+            result_df = (
+                st.session_state["bulk_result"]
+            )
 
-            qe_df = result_df[result_df["QE Classification"] == "QE"]
-            not_qe_df = result_df[result_df["QE Classification"] == "Not QE"]
-            review_df = result_df[result_df["QE Classification"] == "Review"]
+            required_columns = [
+                "Description",
+                "QE Classification",
+                "Matched Rule",
+                "Reason"
+            ]
+
+            for col in required_columns:
+
+                if col not in result_df.columns:
+                    result_df[col] = ""
+
+            qe_df = result_df[
+                result_df["QE Classification"] == "QE"
+            ]
+
+            not_qe_df = result_df[
+                result_df["QE Classification"] == "Not QE"
+            ]
+
+            review_df = result_df[
+                result_df["QE Classification"] == "Review"
+            ]
 
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total", len(result_df))
-            col2.metric("QE", len(qe_df))
-            col3.metric("Not QE", len(not_qe_df))
-            col4.metric("Review", len(review_df))
+
+            col1.metric(
+                "Total",
+                len(result_df)
+            )
+
+            col2.metric(
+                "QE",
+                len(qe_df)
+            )
+
+            col3.metric(
+                "Not QE",
+                len(not_qe_df)
+            )
+
+            col4.metric(
+                "Review",
+                len(review_df)
+            )
 
             tab1, tab2, tab3 = st.tabs([
-                f"✅ QE ({len(qe_df)})", 
-                f"❌ Not QE ({len(not_qe_df)})", 
+                f"✅ QE ({len(qe_df)})",
+                f"❌ Not QE ({len(not_qe_df)})",
                 f"⚠️ Review ({len(review_df)})"
             ])
 
             with tab1:
-                st.dataframe(qe_df, use_container_width=True, hide_index=True)
+                st.dataframe(
+                    qe_df,
+                    use_container_width=True,
+                    hide_index=True
+                )
+
             with tab2:
-                st.dataframe(not_qe_df, use_container_width=True, hide_index=True)
+                st.dataframe(
+                    not_qe_df,
+                    use_container_width=True,
+                    hide_index=True
+                )
+
             with tab3:
-                st.dataframe(review_df, use_container_width=True, hide_index=True)
+                st.dataframe(
+                    review_df,
+                    use_container_width=True,
+                    hide_index=True
+                )
 
             output = BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                result_df.to_excel(writer, sheet_name="Results", index=False)
-                qe_df.to_excel(writer, sheet_name="QE", index=False)
-                not_qe_df.to_excel(writer, sheet_name="Not QE", index=False)
-                review_df.to_excel(writer, sheet_name="Review", index=False)
+
+            with pd.ExcelWriter(
+                output,
+                engine="openpyxl"
+            ) as writer:
+
+                result_df.to_excel(
+                    writer,
+                    sheet_name="Results",
+                    index=False
+                )
+
+                qe_df.to_excel(
+                    writer,
+                    sheet_name="QE",
+                    index=False
+                )
+
+                not_qe_df.to_excel(
+                    writer,
+                    sheet_name="Not QE",
+                    index=False
+                )
+
+                review_df.to_excel(
+                    writer,
+                    sheet_name="Review",
+                    index=False
+                )
 
             st.download_button(
                 "📥 Download Results",
@@ -337,8 +457,10 @@ if uploaded_file:
                 file_name="QE_Classification_Output.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-            
+
             if st.button("🧹 Clear Results"):
+
                 if "bulk_result" in st.session_state:
                     del st.session_state["bulk_result"]
+
                 st.rerun()
