@@ -167,7 +167,7 @@ Output:
 Descriptions:
 
 {description_text}
-"""
+
     response = model.generate_content(
         prompt
     )
