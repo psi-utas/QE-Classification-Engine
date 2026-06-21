@@ -8,10 +8,141 @@ import json
 # PAGE CONFIG
 # =====================================================
 st.set_page_config(
-    page_title="QE Lookup",
+    page_title="SuperQE",
     page_icon="🔍",
     layout="wide"
 )
+# =====================================================
+# THEME TOGGLE
+# =====================================================
+
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
+with st.sidebar:
+    st.divider()
+    dark_mode = st.toggle(
+        "🌙 Dark Mode",
+        value=st.session_state.dark_mode
+    )
+    st.session_state.dark_mode = dark_mode
+
+# =====================================================
+# DYNAMIC STYLING
+# =====================================================
+
+if st.session_state.dark_mode:
+
+    st.markdown("""
+    <style>
+
+    .stApp {
+        background:#000000;
+        color:white;
+    }
+
+    [data-testid="stSidebar"] {
+        background:#111111;
+    }
+
+    h1,h2,h3,h4,h5,h6 {
+        color:white !important;
+    }
+
+    p,div,span,label {
+        color:white !important;
+    }
+
+    div[data-testid="metric-container"]{
+        background:#181818;
+        border:1px solid #333;
+        border-radius:20px;
+        padding:20px;
+    }
+
+    .hero-card{
+        background:linear-gradient(135deg,#111111,#1b1b1b);
+        border:1px solid #333;
+        border-radius:28px;
+        padding:40px;
+        text-align:center;
+        margin-bottom:30px;
+    }
+
+    .footer{
+        margin-top:60px;
+        border-top:1px solid #333;
+        padding-top:25px;
+        text-align:center;
+        color:#aaaaaa;
+    }
+
+    </style>
+    """, unsafe_allow_html=True)
+
+else:
+
+    st.markdown("""
+    <style>
+
+    .stApp{
+        background:#f5f5f7;
+    }
+
+    #MainMenu {visibility:hidden;}
+    footer {visibility:hidden;}
+    header {visibility:hidden;}
+
+    [data-testid="stSidebar"]{
+        background:white;
+        border-right:1px solid #e6e6e6;
+    }
+
+    h1,h2,h3{
+        color:#1d1d1f !important;
+    }
+
+    .hero-card{
+        background:linear-gradient(135deg,#ffffff,#f7f7f8);
+        border-radius:28px;
+        padding:45px;
+        border:1px solid #e6e6e8;
+        box-shadow:0 10px 30px rgba(0,0,0,.05);
+        text-align:center;
+        margin-bottom:30px;
+    }
+
+    .hero-title{
+        font-size:3rem;
+        font-weight:700;
+        letter-spacing:-1px;
+        color:#1d1d1f;
+    }
+
+    .hero-subtitle{
+        color:#6e6e73;
+        font-size:1.15rem;
+        margin-top:10px;
+    }
+
+    div[data-testid="metric-container"]{
+        background:white;
+        border-radius:18px;
+        border:1px solid #ececec;
+        padding:18px;
+        box-shadow:0 4px 20px rgba(0,0,0,.04);
+    }
+
+    .footer{
+        margin-top:60px;
+        padding-top:25px;
+        border-top:1px solid #d2d2d7;
+        text-align:center;
+        color:#6e6e73;
+    }
+
+    </style>
+    """, unsafe_allow_html=True)
 # =====================================================
 # SIDEBAR
 # =====================================================
@@ -234,11 +365,23 @@ def classify_bulk(input_df):
 # =====================================================
 # HEADER & SINGLE SEARCH
 # =====================================================
-st.title("🔍 QE Lookup")
+st.markdown("""
+<div class="hero-card">
+
+<div class="hero-title">
+SuperQE
+</div>
+
+<div class="hero-subtitle">
+ATO Payday Super 2026 Qualifying Earnings Classification Platform
+</div>
+
+</div>
+""", unsafe_allow_html=True)
 
 search_text = st.text_input(
     "",
-    placeholder='Type payment description e.g. "Annual Leave", "Parental Leave Half Pay"...'
+    placeholder="Search payment types (Annual Leave, Casual Loading, Redundancy Payment...)"
 )
 
 if search_text:
@@ -349,3 +492,24 @@ if uploaded_file:
                 if "bulk_result" in st.session_state:
                     del st.session_state["bulk_result"]
                 st.rerun()
+
+
+st.markdown("""
+<div class="footer">
+
+<b>SuperQE v1.0 Beta</b>
+
+<br><br>
+
+No data stored.
+
+Files you upload are processed in memory only and discarded immediately after results are returned.
+
+Nothing is saved, logged, or transmitted to any third party.
+
+<br><br>
+
+Built by Maruf Sebgatullah
+
+</div>
+""", unsafe_allow_html=True)
