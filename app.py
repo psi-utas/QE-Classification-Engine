@@ -18,19 +18,26 @@ st.set_page_config(
 # OPENAI
 # =====================================================
 
-try:
+with st.sidebar:
 
-    client = OpenAI(
-        api_key=st.secrets["OPENAI_API_KEY"]
+    st.header("AI Settings")
+
+    openai_api_key = st.text_input(
+        "OpenAI API Key",
+        type="password"
     )
 
-except Exception:
+if not openai_api_key:
 
-    st.error(
-        "OpenAI API key not found. Add OPENAI_API_KEY to Streamlit Secrets."
+    st.info(
+        "Enter your OpenAI API key in the sidebar."
     )
 
     st.stop()
+
+client = OpenAI(
+    api_key=openai_api_key
+)
 
 # =====================================================
 # AI CLASSIFICATION
