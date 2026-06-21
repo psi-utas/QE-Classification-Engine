@@ -45,7 +45,8 @@ st.markdown("""
 
 
 # SIDEBAR
-with st.sidebar:
+
+    with st.sidebar:
     st.subheader("Gemini API")
 
     st.link_button(
