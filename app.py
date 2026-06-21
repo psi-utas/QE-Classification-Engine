@@ -95,13 +95,24 @@ Descriptions:
             generation_config=generation_config
         )
 
-        results = json.loads(response.text.strip())
+        results = json.loads(
+            response.text.strip()
+        )
 
         if isinstance(results, list) and len(results) > 0:
-            return results[0]
+
+            return {
+                "QE Classification": results[0].get(
+                    "QE Classification",
+                    "Review"
+                ),
+                "Reason": results[0].get(
+                    "Reason",
+                    "No reason provided"
+                )
+            }
 
         return {
-            "Description": description,
             "QE Classification": "Review",
             "Reason": "No result returned"
         }
@@ -109,7 +120,6 @@ Descriptions:
     except Exception as e:
 
         return {
-            "Description": description,
             "QE Classification": "Review",
             "Reason": str(e)
         }
@@ -117,14 +127,14 @@ Descriptions:
 
 def classify_bulk(input_df):
 
-    try:
+    descriptions = (
+        input_df["Description"]
+        .fillna("")
+        .astype(str)
+        .tolist()
+    )
 
-        descriptions = (
-            input_df["Description"]
-            .fillna("")
-            .astype(str)
-            .tolist()
-        )
+    try:
 
         prompt = f"""
 {PROMPT}
@@ -144,30 +154,35 @@ Descriptions:
 
         if not isinstance(results, list):
             raise Exception(
-                "Expected JSON array from Gemini."
+                "Expected JSON array response."
             )
 
         result_df = pd.DataFrame(results)
 
-        required_columns = [
-            "Description",
-            "QE Classification",
-            "Reason"
+        # Force required columns
+        if "Description" not in result_df.columns:
+            result_df["Description"] = descriptions[:len(result_df)]
+
+        if "QE Classification" not in result_df.columns:
+            result_df["QE Classification"] = "Review"
+
+        if "Reason" not in result_df.columns:
+            result_df["Reason"] = "Missing response"
+
+        return result_df[
+            [
+                "Description",
+                "QE Classification",
+                "Reason"
+            ]
         ]
-
-        for col in required_columns:
-
-            if col not in result_df.columns:
-                result_df[col] = ""
-
-        return result_df[required_columns]
 
     except Exception as e:
 
         return pd.DataFrame({
-            "Description": ["ERROR"],
-            "QE Classification": ["Review"],
-            "Reason": [str(e)]
+            "Description": descriptions,
+            "QE Classification": "Review",
+            "Reason": str(e)
         })
 
 # =====================================================
@@ -190,12 +205,14 @@ st.subheader("QE Lookup")
 
 search_text = st.text_input(
     "Payment Description",
-    placeholder="Annual Leave, Overtime, Salary..."
+    placeholder="Annual Leave, Salary, Overtime..."
 )
 
 if search_text:
 
-    result = classify_payment(search_text)
+    result = classify_payment(
+        search_text
+    )
 
     classification = result.get(
         "QE Classification",
@@ -216,21 +233,19 @@ if search_text:
     else:
         st.warning("⚠️ Review")
 
-    st.caption(reason)
+    single_df = pd.DataFrame([{
+        "QE Classification": classification,
+        "Reason": reason
+    }])
 
- single_display = pd.DataFrame([{
-    "QE Classification": result.get("QE Classification", ""),
-    "Reason": result.get("Reason", "")
-}])
-
-st.dataframe(
-    single_display,
-    use_container_width=True,
-    hide_index=True
-)
+    st.dataframe(
+        single_df,
+        use_container_width=True,
+        hide_index=True
+    )
 
 # =====================================================
-# BULK UPLOAD
+# BULK SECTION
 # =====================================================
 st.divider()
 
@@ -266,7 +281,7 @@ uploaded_file = st.file_uploader(
 )
 
 # =====================================================
-# PROCESS FILE
+# BULK PROCESSING
 # =====================================================
 if uploaded_file:
 
@@ -307,9 +322,13 @@ if uploaded_file:
                 "Classifying file..."
             ):
 
-                st.session_state["bulk_result"] = (
-                    classify_bulk(input_df)
+                result_df = classify_bulk(
+                    input_df
                 )
+
+                st.session_state[
+                    "bulk_result"
+                ] = result_df
 
             st.success(
                 "Analysis complete!"
@@ -317,7 +336,9 @@ if uploaded_file:
 
         if "bulk_result" in st.session_state:
 
-            result_df = st.session_state["bulk_result"]
+            result_df = st.session_state[
+                "bulk_result"
+            ]
 
             qe_df = result_df[
                 result_df["QE Classification"] == "QE"
@@ -379,7 +400,12 @@ if uploaded_file:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-            if st.button("🧹 Clear Results"):
+            if st.button(
+                "🧹 Clear Results"
+            ):
 
-                del st.session_state["bulk_result"]
+                del st.session_state[
+                    "bulk_result"
+                ]
+
                 st.rerun()
