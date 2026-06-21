@@ -218,11 +218,16 @@ if search_text:
 
     st.caption(reason)
 
-    st.dataframe(
-        pd.DataFrame([result]),
-        use_container_width=True,
-        hide_index=True
-    )
+ single_display = pd.DataFrame([{
+    "QE Classification": result.get("QE Classification", ""),
+    "Reason": result.get("Reason", "")
+}])
+
+st.dataframe(
+    single_display,
+    use_container_width=True,
+    hide_index=True
+)
 
 # =====================================================
 # BULK UPLOAD
