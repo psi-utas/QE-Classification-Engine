@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import google.generativeai as genai
-import json
 from io import BytesIO
+import json
 
 # =====================================================
 # PAGE CONFIG
@@ -28,7 +28,7 @@ with st.sidebar:
     )
 
 # =====================================================
-# GEMINI SETUP
+# GEMINI CONFIGURATION
 # =====================================================
 
 model = None
@@ -41,9 +41,8 @@ if gemini_api_key:
             api_key=gemini_api_key
         )
 
-        # Safer model for free tier
         model = genai.GenerativeModel(
-            "gemini-1.5-flash"
+            "gemini-2.5-flash"
         )
 
         st.sidebar.success(
@@ -63,7 +62,7 @@ else:
     )
 
 # =====================================================
-# TEST BUTTON
+# DEBUG TEST
 # =====================================================
 
 if model:
@@ -75,17 +74,19 @@ if model:
         try:
 
             response = model.generate_content(
-                "Say hello"
+                "What is annual leave?"
             )
 
             st.sidebar.success(
-                response.text
+                "Gemini Response Received"
             )
+
+            st.write(response.text)
 
         except Exception as e:
 
-            st.sidebar.error(
-                str(e)
+            st.error(
+                f"Test Error: {e}"
             )
 
 # =====================================================
@@ -110,9 +111,7 @@ def classify_payment(description):
             "Reason": "Empty description"
         }
 
-    description = str(
-        description
-    ).strip()
+    description = str(description).strip()
 
     if description == "":
 
@@ -123,13 +122,13 @@ def classify_payment(description):
         }
 
     prompt = f"""
-You are an Australian payroll expert.
+You are an Australian payroll and superannuation specialist.
 
-Using ATO Payday Super 2026 qualifying earnings principles.
+Using ATO Payday Super 2026 Qualifying Earnings principles.
 
-Classify the payroll item below.
+Classify the payment description.
 
-Return VALID JSON only.
+Return ONLY valid JSON.
 
 {{
   "matched_rule":"",
@@ -154,19 +153,9 @@ Description:
             .strip()
         )
 
-        try:
-
-            result = json.loads(
-                content
-            )
-
-        except:
-
-            return {
-                "Matched Rule": "AI Response Error",
-                "QE Classification": "Review",
-                "Reason": content
-            }
+        result = json.loads(
+            content
+        )
 
         return {
             "Matched Rule":
