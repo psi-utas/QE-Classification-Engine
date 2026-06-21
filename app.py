@@ -36,7 +36,7 @@ if not gemini_api_key:
     st.stop()
 
 # =====================================================
-# GEMINI
+# GEMINI CONFIG
 # =====================================================
 
 genai.configure(
@@ -49,55 +49,102 @@ model = genai.GenerativeModel(
     MODEL_NAME
 )
 
+generation_config = {
+    "temperature": 0,
+    "top_p": 0.1,
+    "top_k": 1
+}
+
 # =====================================================
-# SINGLE CLASSIFICATION
+# PROMPTS
+# =====================================================
+
+SINGLE_PROMPT = """
+You are a payroll classification engine.
+Your ONLY source of truth is the Australian Taxation Office page:
+https://www.ato.gov.au/businesses-and-organisations/super-for-employers/payday-super/paying-super-on-payday/what-payments-are-qualifying-earnings
+
+
+Rules:
+
+1. Use only ATO QE concepts.
+2. Do not use external knowledge.
+3. Do not guess.
+4. If confidence is below 95%, return Review.
+5. Keep reason under 4 words.
+6. Return JSON only.
+7. No legislation explanations.
+8. No long reasoning.
+
+Reason values:
+
+Paid leave
+Ordinary earnings
+Commission
+Bonus payment
+Overtime
+Allowance unclear
+Leave unclear
+Termination payment
+Needs review
+
+Return:
+
+{
+    "Matched Rule":"",
+    "QE Classification":"QE|Not QE|Review",
+    "Reason":""
+}
+"""
+
+BULK_PROMPT = """
+You are a payroll classification engine.
+
+Your ONLY source of truth is the Australian Taxation Office page:
+https://www.ato.gov.au/businesses-and-organisations/super-for-employers/payday-super/paying-super-on-payday/what-payments-are-qualifying-earnings
+
+
+Rules:
+
+1. Use only ATO QE concepts.
+2. Do not use external knowledge.
+3. Do not guess.
+4. If confidence is below 95%, return Review.
+5. Keep reason under 4 words.
+6. No legislation explanations.
+7. Return JSON array only.
+
+Return:
+
+[
+  {
+    "Description":"",
+    "Matched Rule":"",
+    "QE Classification":"QE|Not QE|Review",
+    "Reason":""
+  }
+]
+"""
+
+# =====================================================
+# SINGLE SEARCH
 # =====================================================
 
 def classify_payment(description):
 
-    
-prompt = f"""
-You are a payroll classification engine.
+    try:
 
-Your ONLY source of truth is the Australian Taxation Office page:
-
-https://www.ato.gov.au/businesses-and-organisations/super-for-employers/payday-super/paying-super-on-payday/what-payments-are-qualifying-earnings
-
-Rules:
-
-1. Use ONLY information contained on that page.
-2. Do NOT use external knowledge.
-3. Do NOT infer.
-4. Do NOT guess.
-5. If the classification is not clearly supported by that page:
-   classify as Review.
-6. If confidence is below 95%:
-   classify as Review.
-7. Reason must be 5 words or fewer.
-8. Return JSON only.
-9. Classification must be one of:
-
-QE
-Not QE
-Review
-
-Output format:
-
-{{
-  "Matched Rule":"",
-  "QE Classification":"QE|Not QE|Review",
-  "Reason":""
-}}
+        prompt = f"""
+{SINGLE_PROMPT}
 
 Description:
 
 {description}
-
-
-    try:
+"""
 
         response = model.generate_content(
-            prompt
+            prompt,
+            generation_config=generation_config
         )
 
         content = (
@@ -138,37 +185,16 @@ def classify_bulk(input_df):
     )
 
     prompt = f"""
-
-prompt = f"""
-You are a payroll classification engine.
-
-Use ONLY the ATO Qualifying Earnings page.
-
-Rules:
-
-- No external knowledge.
-- No assumptions.
-- If uncertain return Review.
-- Reason maximum 3 words.
-- Return ONLY JSON array.
-
-Output:
-
-[
-  {{
-    "Description":"",
-    "Matched Rule":"",
-    "QE Classification":"QE|Not QE|Review",
-    "Reason":""
-  }}
-]
+{BULK_PROMPT}
 
 Descriptions:
 
 {description_text}
+"""
 
     response = model.generate_content(
-        prompt
+        prompt,
+        generation_config=generation_config
     )
 
     content = (
@@ -190,7 +216,7 @@ st.title("🔍 QE Lookup")
 
 search_text = st.text_input(
     "",
-    placeholder='Type payment description e.g. "Parental Leave Half Pay", "Family Violence Leave", "PILON"...'
+    placeholder='Type payment description e.g. "Annual Leave", "Parental Leave Half Pay", "Family Violence Leave"...'
 )
 
 # =====================================================
@@ -239,19 +265,15 @@ if search_text:
 
 st.divider()
 
-st.subheader("📤 Bulk QE Classification")
-
-st.info(
-    "Download the template, complete the Description column and upload."
+st.subheader(
+    "📤 Bulk QE Classification"
 )
 
-# =====================================================
-# TEMPLATE
-# =====================================================
-
-template_df = pd.DataFrame({
-    "Description": []
-})
+template_df = pd.DataFrame(
+    {
+        "Description": []
+    }
+)
 
 template_output = BytesIO()
 
@@ -273,14 +295,14 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-# =====================================================
-# FILE UPLOAD
-# =====================================================
-
 uploaded_file = st.file_uploader(
     "Upload Completed Template",
     type=["xlsx"]
 )
+
+# =====================================================
+# PROCESS FILE
+# =====================================================
 
 if uploaded_file:
 
@@ -305,7 +327,7 @@ if uploaded_file:
         try:
 
             with st.spinner(
-                "Classifying payroll descriptions..."
+                "Classifying file..."
             ):
 
                 result_df = classify_bulk(
@@ -313,15 +335,21 @@ if uploaded_file:
                 )
 
             qe_df = result_df[
-                result_df["QE Classification"] == "QE"
+                result_df[
+                    "QE Classification"
+                ] == "QE"
             ]
 
             not_qe_df = result_df[
-                result_df["QE Classification"] == "Not QE"
+                result_df[
+                    "QE Classification"
+                ] == "Not QE"
             ]
 
             review_df = result_df[
-                result_df["QE Classification"] == "Review"
+                result_df[
+                    "QE Classification"
+                ] == "Review"
             ]
 
             col1, col2, col3, col4 = st.columns(4)
@@ -346,46 +374,36 @@ if uploaded_file:
                 len(review_df)
             )
 
-            tab1, tab2, tab3 = st.tabs([
-                f"✅ QE ({len(qe_df)})",
-                f"❌ Not QE ({len(not_qe_df)})",
-                f"⚠️ Review ({len(review_df)})"
-            ])
+            tab1, tab2, tab3 = st.tabs(
+                [
+                    f"✅ QE ({len(qe_df)})",
+                    f"❌ Not QE ({len(not_qe_df)})",
+                    f"⚠️ Review ({len(review_df)})"
+                ]
+            )
 
             with tab1:
 
-                st.success(
-                    f"{len(qe_df)} record(s)"
-                )
-
                 st.dataframe(
                     qe_df,
-                    hide_index=True,
-                    use_container_width=True
+                    use_container_width=True,
+                    hide_index=True
                 )
 
             with tab2:
 
-                st.error(
-                    f"{len(not_qe_df)} record(s)"
-                )
-
                 st.dataframe(
                     not_qe_df,
-                    hide_index=True,
-                    use_container_width=True
+                    use_container_width=True,
+                    hide_index=True
                 )
 
             with tab3:
 
-                st.warning(
-                    f"{len(review_df)} record(s)"
-                )
-
                 st.dataframe(
                     review_df,
-                    hide_index=True,
-                    use_container_width=True
+                    use_container_width=True,
+                    hide_index=True
                 )
 
             output = BytesIO()
