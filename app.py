@@ -4,18 +4,14 @@ import google.generativeai as genai
 from io import BytesIO
 import json
 
-# =====================================================
 # PAGE CONFIG
-# =====================================================
 st.set_page_config(
     page_title="QE Lookup",
     page_icon="🔍",
     layout="wide"
 )
 
-# =====================================================
 # SIDEBAR
-# =====================================================
 with st.sidebar:
     st.subheader("Gemini API")
 
@@ -37,9 +33,8 @@ with st.sidebar:
 if not gemini_api_key:
     st.info("Enter your Gemini API Key to continue.")
     st.stop()
-# =====================================================
+
 # GEMINI CONFIG
-# =====================================================
 genai.configure(api_key=gemini_api_key)
 
 MODEL_NAME = "gemini-3.1-flash-lite"
@@ -52,9 +47,7 @@ generation_config = {
     "response_mime_type": "application/json" 
 }
 
-# =====================================================
 # PROMPTS
-# =====================================================
 SINGLE_PROMPT = """
 You are a payroll classification engine.
 Use ONLY ATO Payday Super 2026 Qualifying Earnings concepts and
@@ -127,7 +120,6 @@ Return format JSON schema:
 }
 """
 
-# FIX: Added "QE Classification" to the BULK_PROMPT return format schema
 BULK_PROMPT = """
 You are a payroll classification engine.
 Use ONLY ATO Payday Super 2026 Qualifying Earnings concepts and
@@ -203,9 +195,8 @@ Return format JSON schema:
 ]
 """
 
-# =====================================================
 # CORE FUNCTIONS
-# =====================================================
+
 def classify_payment(description):
     try:
         prompt = f"{SINGLE_PROMPT}\n\nDescription:\n{description}"
@@ -234,9 +225,7 @@ def classify_bulk(input_df):
     results = json.loads(response.text.strip())
     return pd.DataFrame(results)
 
-# =====================================================
 # HEADER & SINGLE SEARCH
-# =====================================================
 st.title("🔍 QE Lookup")
 
 search_text = st.text_input(
@@ -257,9 +246,7 @@ if search_text:
 
     st.caption(result.get("Reason", ""))
 
-# =====================================================
 # BULK UPLOAD
-# =====================================================
 st.divider()
 st.subheader("📤 Bulk QE Classification")
 
@@ -277,9 +264,7 @@ st.download_button(
 
 uploaded_file = st.file_uploader("Upload Completed Template", type=["xlsx"])
 
-# =====================================================
 # PROCESS FILE (WITH SUBMIT BUTTON AND STATE HANDLING)
-# =====================================================
 if uploaded_file:
     # IMPROVEMENT: Clear out historical results if a brand new file is detected
     if "current_file" not in st.session_state or st.session_state["current_file"] != uploaded_file.name:
