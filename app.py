@@ -61,32 +61,47 @@ generation_config = {
 
 SINGLE_PROMPT = """
 You are a payroll classification engine.
-Your ONLY source of truth is the Australian Taxation Office page:
+Use ONLY ATO Payday Super 2026 Qualifying Earnings concepts and
 https://www.ato.gov.au/businesses-and-organisations/super-for-employers/payday-super/paying-super-on-payday/what-payments-are-qualifying-earnings
-
 
 Rules:
 
 1. Use only ATO QE concepts.
 2. Do not use external knowledge.
 3. Do not guess.
-4. If confidence is below 95%, return Review.
-5. Keep reason under 4 words.
+4. If confidence is below 80%, return Review.
+5. Keep reason under 10 words.
 6. Return JSON only.
-7. No legislation explanations.
 8. No long reasoning.
 
-Reason values:
+Guidance:
 
-Paid leave
-Ordinary earnings
-Commission
-Bonus payment
-Overtime
-Allowance unclear
-Leave unclear
-Termination payment
-Needs review
+QE Examples:
+- Ordinary Time Earnings
+- Annual Leave
+- Sick Leave
+- Personal Leave
+- Family and Domestic Violence Leave
+- Commissions
+- Performance Bonus
+- Casual Loading
+- Shift Penalties
+
+Not QE Examples:
+- Overtime
+- Parental Leave
+- Maternity Leave
+- Paternity Leave
+- Jury Duty
+- Government Paid Parental Leave
+- Genuine Redundancy
+- Employee Termination Payments
+
+Review Examples:
+- Car Allowance
+- Phone Allowance
+- Tool Allowance
+- Meal Allowance
 
 Return:
 
@@ -99,21 +114,47 @@ Return:
 
 BULK_PROMPT = """
 You are a payroll classification engine.
-
-Your ONLY source of truth is the Australian Taxation Office page:
+Use ONLY ATO Payday Super 2026 Qualifying Earnings concepts and
 https://www.ato.gov.au/businesses-and-organisations/super-for-employers/payday-super/paying-super-on-payday/what-payments-are-qualifying-earnings
-
 
 Rules:
 
 1. Use only ATO QE concepts.
 2. Do not use external knowledge.
 3. Do not guess.
-4. If confidence is below 95%, return Review.
-5. Keep reason under 4 words.
-6. No legislation explanations.
-7. Return JSON array only.
+4. If confidence is below 80%, return Review.
+5. Keep reason under 10 words.
+6. Return JSON only.
+8. No long reasoning.
 
+Guidance:
+
+QE Examples:
+- Ordinary Time Earnings
+- Annual Leave
+- Sick Leave
+- Personal Leave
+- Family and Domestic Violence Leave
+- Commissions
+- Performance Bonus
+- Casual Loading
+- Shift Penalties
+
+Not QE Examples:
+- Overtime
+- Parental Leave
+- Maternity Leave
+- Paternity Leave
+- Jury Duty
+- Government Paid Parental Leave
+- Genuine Redundancy
+- Employee Termination Payments
+
+Review Examples:
+- Car Allowance
+- Phone Allowance
+- Tool Allowance
+- Meal Allowance
 Return:
 
 [
