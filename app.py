@@ -226,7 +226,7 @@ def classify_bulk(input_df):
     return pd.DataFrame(results)
 
 # HEADER & SINGLE SEARCH
-# QE Lookup Card
+    
     st.markdown("### 🔍 QE Lookup")
     st.caption("Search a payment description")
 
