@@ -225,35 +225,33 @@ def classify_bulk(input_df):
     results = json.loads(response.text.strip())
     return pd.DataFrame(results)
 
-
 # ------------------------
-# QE Lookup
-# ------------------------
+# HEADER & SINGLE SEARCH
+# QE Lookup Card
 
-# ------------------------
-# QE Lookup
-# ------------------------
+    
+with st.container(border=True):
+result_placeholder = st.container(border=True)
 
-st.markdown("### 🔍 QE Lookup")
-st.caption("Search a payment description")
+with result_placeholder:
+    
+    st.markdown("### 🔍 QE Lookup")
+    st.caption("Search a payment description")
 
-with st.form("qe_search_form"):
+    with st.form("qe_search_form"):
+        search_text = st.text_input(
+            "",
+            placeholder="Annual Leave, Parental Leave, TOIL..."
+        )
 
-    search_text = st.text_input(
-        "",
-        placeholder="Annual Leave, Parental Leave, TOIL..."
-    )
+        submitted = st.form_submit_button("Search")
 
-    submitted = st.form_submit_button("Search")
+    # Run search
+    if submitted and search_text:
 
-if submitted:
-
-    if not search_text.strip():
-        st.warning("Please enter a payment description.")
-
-    else:
         loader_placeholder = st.empty()
 
+        # Loader inside card
         with loader_placeholder:
             st.markdown(
                 """
@@ -273,7 +271,7 @@ if submitted:
                         animation:spin 0.8s linear infinite;
                     ">
                     </div>
-                    Consulting classification engine...
+                        Consulting classification engine...
                 </div>
 
                 <style>
@@ -286,126 +284,88 @@ if submitted:
                 unsafe_allow_html=True,
             )
 
-        st.session_state.qe_result = classify_payment(search_text)
+        # Classification
+        result = classify_payment(search_text)
 
+        # Remove loader
         loader_placeholder.empty()
 
-# ------------------------
-# Results
-# ------------------------
-
-if "qe_result" in st.session_state:
-
-    result = st.session_state.qe_result
-
-    classification = result.get("QE Classification", "Review")
-    rule = result.get("Matched Rule", "Unknown")
-    reason = result.get("Reason", "")
-
-    if classification == "QE":
-
-        st.markdown(
-            f"""
-            <div style="
-                padding:16px;
-                border-radius:12px;
-                border-left:4px solid #22c55e;
-                background:rgba(34,197,94,0.08);
-                margin-top:10px;
-            ">
+        classification = result.get("QE Classification", "Review")
+        rule = result.get("Matched Rule", "Unknown")
+        reason = result.get("Reason", "")
+        
+        # Result card
+        if classification == "QE":
+            st.markdown(
+                f"""
                 <div style="
-                    font-size:18px;
-                    font-weight:600;
-                    color:#22c55e;
+                    padding:16px;
+                    border-radius:12px;
+                    border-left:4px solid #22c55e;
+                    background:rgba(34,197,94,0.08);
+                    margin-top:10px;
                 ">
-                    ✅ QE
+                    <div style="font-size:18px;font-weight:600;color:#22c55e;">
+                        ✅ QE
+                    </div>
+                    <div style="margin-top:6px;">
+                        <strong>{rule}</strong>
+                    </div>
+                    <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+                        {reason}
+                    </div>
                 </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                <div style="margin-top:6px;">
-                    <strong>{rule}</strong>
-                </div>
-
+        elif classification == "Not QE":
+            st.markdown(
+                f"""
                 <div style="
-                    margin-top:6px;
-                    font-size:14px;
-                    opacity:0.8;
+                    padding:16px;
+                    border-radius:12px;
+                    border-left:4px solid #ef4444;
+                    background:rgba(239,68,68,0.08);
+                    margin-top:10px;
                 ">
-                    {reason}
+                    <div style="font-size:18px;font-weight:600;color:#ef4444;">
+                        ❌ Not QE
+                    </div>
+                    <div style="margin-top:6px;">
+                        <strong>{rule}</strong>
+                    </div>
+                    <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+                        {reason}
+                    </div>
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
-    elif classification == "Not QE":
-
-        st.markdown(
-            f"""
-            <div style="
-                padding:16px;
-                border-radius:12px;
-                border-left:4px solid #ef4444;
-                background:rgba(239,68,68,0.08);
-                margin-top:10px;
-            ">
+        else:
+            st.markdown(
+                f"""
                 <div style="
-                    font-size:18px;
-                    font-weight:600;
-                    color:#ef4444;
+                    padding:16px;
+                    border-radius:12px;
+                    border-left:4px solid #f59e0b;
+                    background:rgba(245,158,11,0.08);
+                    margin-top:10px;
                 ">
-                    ❌ Not QE
+                    <div style="font-size:18px;font-weight:600;color:#f59e0b;">
+                        ⚠️ Review Required
+                    </div>
+                    <div style="margin-top:6px;">
+                        <strong>{rule}</strong>
+                    </div>
+                    <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+                        {reason}
+                    </div>
                 </div>
-
-                <div style="margin-top:6px;">
-                    <strong>{rule}</strong>
-                </div>
-
-                <div style="
-                    margin-top:6px;
-                    font-size:14px;
-                    opacity:0.8;
-                ">
-                    {reason}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    else:
-
-        st.markdown(
-            f"""
-            <div style="
-                padding:16px;
-                border-radius:12px;
-                border-left:4px solid #f59e0b;
-                background:rgba(245,158,11,0.08);
-                margin-top:10px;
-            ">
-                <div style="
-                    font-size:18px;
-                    font-weight:600;
-                    color:#f59e0b;
-                ">
-                    ⚠️ Review Required
-                </div>
-
-                <div style="margin-top:6px;">
-                    <strong>{rule}</strong>
-                </div>
-
-                <div style="
-                    margin-top:6px;
-                    font-size:14px;
-                    opacity:0.8;
-                ">
-                    {reason}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
 # BULK UPLOAD
 st.divider()
