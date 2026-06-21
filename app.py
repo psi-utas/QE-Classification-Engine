@@ -227,48 +227,49 @@ def classify_bulk(input_df):
 
 # HEADER & SINGLE SEARCH
 # =====================================================
-# HEADER & SINGLE SEARCH
-# =====================================================
 st.title("🔍 QE Lookup")
 
-search_text = st.text_input(
-    "",
-    placeholder='Type payment description e.g. "Annual Leave", "Parental Leave"...'
-)
+with st.form("qe_search_form"):
+    search_text = st.text_input(
+        "",
+        placeholder='Type payment description e.g. "Annual Leave", "Parental Leave"...'
+    )
 
-if search_text:
-    # --- Custom Circle Loader Container ---
+    submitted = st.form_submit_button("Search")
+
+if submitted and search_text:
     loader_placeholder = st.empty()
+
     with loader_placeholder.container():
         st.markdown(
             """
-            <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px; margin-bottom: 25px;">
+            <div style="display:flex;align-items:center;gap:15px;">
                 <div class="spinner" style="
-                    border: 4px solid rgba(0,0,0,0.1);
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    border-left-color: #0068c9;
-                    animation: spin 1s linear infinite;
+                    border:4px solid rgba(0,0,0,0.1);
+                    width:36px;
+                    height:36px;
+                    border-radius:50%;
+                    border-left-color:#0068c9;
+                    animation:spin 1s linear infinite;
                 "></div>
-                <div style= font-weight: 100; color: #0068c9; font-family: sans-serif;">
-                    ✨ Consulting the classification engine... Let's see what we've got!
+                <div style="font-weight:100;color:#0068c9;">
+                    ✨ Consulting the classification engine...
                 </div>
             </div>
             <style>
-                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                @keyframes spin {
+                    0% {transform: rotate(0deg);}
+                    100% {transform: rotate(360deg);}
+                }
             </style>
             """,
             unsafe_allow_html=True
         )
 
-    # Fetch the AI data
     result = classify_payment(search_text)
-    
-    # Wipe the custom loader instantly when done
+
     loader_placeholder.empty()
 
-    # --- Display Results ---
     classification = result.get("QE Classification", "Review")
 
     if classification == "QE":
