@@ -230,55 +230,68 @@ def classify_bulk(input_df):
 # QE Lookup
 # ------------------------
 
+# ------------------------
+# QE Lookup
+# ------------------------
+
 st.markdown("### 🔍 QE Lookup")
 st.caption("Search a payment description")
 
 with st.form("qe_search_form"):
 
-    search = st.form_submit_button("Search")    search_text = st.text_input(
+    search_text = st.text_input(
+        "",
+        placeholder="Annual Leave, Parental Leave, TOIL..."
+    )
 
-if submitted and search_text:
+    submitted = st.form_submit_button("Search")
 
-    loader_placeholder = st.empty()
+if submitted:
 
-    with loader_placeholder:
-        st.markdown(
-            """
-            <div style="
-                display:flex;
-                align-items:center;
-                gap:12px;
-                padding:10px 0;
-                color:#60a5fa;
-            ">
+    if not search_text.strip():
+        st.warning("Please enter a payment description.")
+
+    else:
+        loader_placeholder = st.empty()
+
+        with loader_placeholder:
+            st.markdown(
+                """
                 <div style="
-                    border:3px solid rgba(255,255,255,0.15);
-                    width:22px;
-                    height:22px;
-                    border-radius:50%;
-                    border-left-color:#60a5fa;
-                    animation:spin 0.8s linear infinite;
+                    display:flex;
+                    align-items:center;
+                    gap:12px;
+                    padding:10px 0;
+                    color:#60a5fa;
                 ">
+                    <div style="
+                        border:3px solid rgba(255,255,255,0.15);
+                        width:22px;
+                        height:22px;
+                        border-radius:50%;
+                        border-left-color:#60a5fa;
+                        animation:spin 0.8s linear infinite;
+                    ">
+                    </div>
+                    Consulting classification engine...
                 </div>
-                Consulting classification engine...
-            </div>
 
-            <style>
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
+                <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    st.session_state.qe_result = classify_payment(search_text)
+        st.session_state.qe_result = classify_payment(search_text)
 
-    loader_placeholder.empty()
+        loader_placeholder.empty()
 
 # ------------------------
-# Display Result
+# Results
 # ------------------------
 
 if "qe_result" in st.session_state:
@@ -290,6 +303,7 @@ if "qe_result" in st.session_state:
     reason = result.get("Reason", "")
 
     if classification == "QE":
+
         st.markdown(
             f"""
             <div style="
@@ -299,13 +313,23 @@ if "qe_result" in st.session_state:
                 background:rgba(34,197,94,0.08);
                 margin-top:10px;
             ">
-                <div style="font-size:18px;font-weight:600;color:#22c55e;">
+                <div style="
+                    font-size:18px;
+                    font-weight:600;
+                    color:#22c55e;
+                ">
                     ✅ QE
                 </div>
+
                 <div style="margin-top:6px;">
                     <strong>{rule}</strong>
                 </div>
-                <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+
+                <div style="
+                    margin-top:6px;
+                    font-size:14px;
+                    opacity:0.8;
+                ">
                     {reason}
                 </div>
             </div>
@@ -314,6 +338,7 @@ if "qe_result" in st.session_state:
         )
 
     elif classification == "Not QE":
+
         st.markdown(
             f"""
             <div style="
@@ -323,13 +348,23 @@ if "qe_result" in st.session_state:
                 background:rgba(239,68,68,0.08);
                 margin-top:10px;
             ">
-                <div style="font-size:18px;font-weight:600;color:#ef4444;">
+                <div style="
+                    font-size:18px;
+                    font-weight:600;
+                    color:#ef4444;
+                ">
                     ❌ Not QE
                 </div>
+
                 <div style="margin-top:6px;">
                     <strong>{rule}</strong>
                 </div>
-                <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+
+                <div style="
+                    margin-top:6px;
+                    font-size:14px;
+                    opacity:0.8;
+                ">
                     {reason}
                 </div>
             </div>
@@ -338,6 +373,7 @@ if "qe_result" in st.session_state:
         )
 
     else:
+
         st.markdown(
             f"""
             <div style="
@@ -347,23 +383,29 @@ if "qe_result" in st.session_state:
                 background:rgba(245,158,11,0.08);
                 margin-top:10px;
             ">
-                <div style="font-size:18px;font-weight:600;color:#f59e0b;">
+                <div style="
+                    font-size:18px;
+                    font-weight:600;
+                    color:#f59e0b;
+                ">
                     ⚠️ Review Required
                 </div>
+
                 <div style="margin-top:6px;">
                     <strong>{rule}</strong>
                 </div>
-                <div style="margin-top:6px;font-size:14px;opacity:0.8;">
+
+                <div style="
+                    margin-top:6px;
+                    font-size:14px;
+                    opacity:0.8;
+                ">
                     {reason}
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        "",
-        placeholder="Annual Leave, Parental Leave, TOIL..."
-    )
-
 
 # BULK UPLOAD
 st.divider()
