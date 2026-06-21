@@ -13,13 +13,16 @@ st.set_page_config(
 )
 
 #force block
-st.markdown("""
-<style>
-header[data-testid="stHeader"] {
-    display: none;
-}
-</style>
-""", unsafe_allow_html=True)
+
+# st.markdown("""
+# <style>
+# header[data-testid="stHeader"] {
+#     display: none;
+# }
+# </style>
+# """, unsafe_allow_html=True)
+
+
 
 #title
 st.markdown("""
