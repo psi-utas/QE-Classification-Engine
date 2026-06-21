@@ -22,14 +22,8 @@ with st.sidebar:
     st.header("AI Settings")
 
     st.markdown("### Gemini API Key") 
-
-    gemini_api_key = st.text_input(
-        "Gemini API Key",
-        type="password",
-        label_visibility="collapsed",
-        placeholder="Paste your Gemini API Key"
-    )
-    st.markdown(
+    
+     st.markdown(
         """
         <a href="https://aistudio.google.com/u/1/api-keys"
            target="_blank">
@@ -39,6 +33,12 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
+    gemini_api_key = st.text_input(
+        "Gemini API Key",
+        type="password",
+        label_visibility="collapsed",
+        placeholder="Paste your Gemini API Key"
+    )
     use_key = st.button(
         "Use Gemini Key",
         type="primary",
