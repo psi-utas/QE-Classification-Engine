@@ -69,13 +69,8 @@ generation_config = {
 # =====================================================
 # PROMPTS
 # =====================================================
-SINGLE_PROMPT = """
+PROMPT = """
 
-
-
-
-
- 
 
 Return format JSON schema:
 
@@ -95,7 +90,7 @@ Classification": "QE or Not QE or Review",
 
 """
 
-BULK_PROMPT = """
+PROMPT = """
 
  
 Return format JSON schema:
@@ -130,7 +125,7 @@ def classify_payment(description):
     try:
 
         prompt = f"""
-{SINGLE_PROMPT}
+{PROMPT}
 
 Description:
 {description}
@@ -171,7 +166,7 @@ def classify_bulk(input_df):
         )
 
         prompt = f"""
-{BULK_PROMPT}
+{PROMPT}
 
 Descriptions:
 {description_text}
