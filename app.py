@@ -242,62 +242,6 @@ with result_placeholder:
 
         submitted = st.form_submit_button("Search")
 
-    if submitted and search_text:
-
-        loader = st.empty()
-
-        with loader:
-            st.markdown(
-                """
-                <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
-                    <div style="
-                        border:3px solid rgba(255,255,255,0.15);
-                        width:24px;
-                        height:24px;
-                        border-radius:50%;
-                        border-left-color:#0068c9;
-                        animation:spin 1s linear infinite;
-                    "></div>
-                    <span style="color:#0068c9;">
-                        Consulting classification engine...
-                    </span>
-                </div>
-
-                <style>
-                @keyframes spin {
-                    0% {transform: rotate(0deg);}
-                    100% {transform: rotate(360deg);}
-                }
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
-
-        result = classify_payment(search_text)
-
-        loader.empty()
-
-        classification = result.get("QE Classification", "Review")
-
-        st.divider()
-
-        if classification == "QE":
-            st.success(
-                f"✅ {result.get('Matched Rule', 'Unknown')} → QE"
-            )
-
-        elif classification == "Not QE":
-            st.error(
-                f"❌ {result.get('Matched Rule', 'Unknown')} → Not QE"
-            )
-
-        else:
-            st.warning(
-                f"⚠️ {result.get('Matched Rule', 'Unknown')} → Review"
-            )
-
-        st.caption(result.get("Reason", ""))
-
     # Run search
     if submitted and search_text:
 
