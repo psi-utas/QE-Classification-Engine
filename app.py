@@ -42,11 +42,11 @@ with st.sidebar:
     )
 
     st.caption(
-        "Your API key is used only for requests submitted during this session."
+        "Your API key is used only during this session."
     )
 
 if not gemini_api_key:
-    st.info("Enter your Gemini API Key in the sidebar to continue.")
+    st.info("Enter your Gemini API Key to continue.")
     st.stop()
 
 # =====================================================
@@ -66,29 +66,28 @@ generation_config = {
 }
 
 # =====================================================
-# MASTER PROMPT
+# PROMPT
 # =====================================================
 PROMPT = """
-You are a payroll classification engine.
-
-PASTE YOUR FULL QE CLASSIFICATION RULES HERE.
+PASTE YOUR FULL QE RULES HERE
 
 Return JSON only.
 
-For every payment description return:
+Always return a JSON array.
+
+For every description provided return:
 
 [
   {
     "Description": "string",
     "QE Classification": "QE or Not QE or Review",
-    "Matched Rule": "string",
     "Reason": "string"
   }
 ]
 """
 
 # =====================================================
-# CORE FUNCTIONS
+# FUNCTIONS
 # =====================================================
 def classify_payment(description):
 
@@ -114,7 +113,6 @@ Descriptions:
         return {
             "Description": description,
             "QE Classification": "Review",
-            "Matched Rule": "Invalid Response",
             "Reason": "No result returned"
         }
 
@@ -123,7 +121,6 @@ Descriptions:
         return {
             "Description": description,
             "QE Classification": "Review",
-            "Matched Rule": "AI Error",
             "Reason": str(e)
         }
 
@@ -154,14 +151,13 @@ Descriptions:
         results = json.loads(response.text.strip())
 
         if not isinstance(results, list):
-            raise Exception("Model returned non-list JSON.")
+            raise Exception("Expected JSON array.")
 
         result_df = pd.DataFrame(results)
 
         required_columns = [
             "Description",
             "QE Classification",
-            "Matched Rule",
             "Reason"
         ]
 
@@ -169,14 +165,13 @@ Descriptions:
             if col not in result_df.columns:
                 result_df[col] = ""
 
-        return result_df
+        return result_df[required_columns]
 
     except Exception as e:
 
         return pd.DataFrame({
             "Description": ["ERROR"],
             "QE Classification": ["Review"],
-            "Matched Rule": ["AI Error"],
             "Reason": [str(e)]
         })
 
@@ -190,7 +185,7 @@ st.caption(
 )
 
 st.success(
-    "🔒 No data stored. Files are processed in memory only and discarded immediately after results are returned."
+    "🔒 No data stored. Files are processed in memory only."
 )
 
 # =====================================================
@@ -200,7 +195,7 @@ st.subheader("QE Lookup")
 
 search_text = st.text_input(
     "Payment Description",
-    placeholder="Annual Leave, Casual Loading, Redundancy Payment, Overtime..."
+    placeholder="Annual Leave, Overtime, Salary..."
 )
 
 if search_text:
@@ -212,33 +207,19 @@ if search_text:
         "Review"
     )
 
-    matched_rule = result.get(
-        "Matched Rule",
-        "Unknown"
-    )
-
     reason = result.get(
         "Reason",
         ""
     )
 
     if classification == "QE":
-
-        st.success(
-            f"✅ {matched_rule} → QE"
-        )
+        st.success("✅ QE")
 
     elif classification == "Not QE":
-
-        st.error(
-            f"❌ {matched_rule} → Not QE"
-        )
+        st.error("❌ Not QE")
 
     else:
-
-        st.warning(
-            f"⚠️ {matched_rule} → Review"
-        )
+        st.warning("⚠️ Review")
 
     st.caption(reason)
 
@@ -249,14 +230,15 @@ if search_text:
     )
 
 # =====================================================
-# BULK UPLOAD
+# BULK SECTION
 # =====================================================
 st.divider()
+
 st.subheader("📤 Bulk QE Classification")
 
-template_df = pd.DataFrame(
-    {"Description": []}
-)
+template_df = pd.DataFrame({
+    "Description": []
+})
 
 template_output = BytesIO()
 
@@ -284,7 +266,7 @@ uploaded_file = st.file_uploader(
 )
 
 # =====================================================
-# PROCESS BULK FILE
+# PROCESS FILE
 # =====================================================
 if uploaded_file:
 
@@ -321,43 +303,21 @@ if uploaded_file:
             type="primary"
         ):
 
-            try:
+            with st.spinner(
+                "Classifying file..."
+            ):
 
-                with st.spinner(
-                    "Classifying file..."
-                ):
-
-                    st.session_state["bulk_result"] = (
-                        classify_bulk(input_df)
-                    )
-
-                st.success(
-                    "Analysis complete!"
+                st.session_state["bulk_result"] = (
+                    classify_bulk(input_df)
                 )
 
-            except Exception as e:
-
-                st.error(
-                    f"Classification Error: {e}"
-                )
+            st.success(
+                "Analysis complete!"
+            )
 
         if "bulk_result" in st.session_state:
 
-            result_df = (
-                st.session_state["bulk_result"]
-            )
-
-            required_columns = [
-                "Description",
-                "QE Classification",
-                "Matched Rule",
-                "Reason"
-            ]
-
-            for col in required_columns:
-
-                if col not in result_df.columns:
-                    result_df[col] = ""
+            result_df = st.session_state["bulk_result"]
 
             qe_df = result_df[
                 result_df["QE Classification"] == "QE"
@@ -393,32 +353,11 @@ if uploaded_file:
                 len(review_df)
             )
 
-            tab1, tab2, tab3 = st.tabs([
-                f"✅ QE ({len(qe_df)})",
-                f"❌ Not QE ({len(not_qe_df)})",
-                f"⚠️ Review ({len(review_df)})"
-            ])
-
-            with tab1:
-                st.dataframe(
-                    qe_df,
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-            with tab2:
-                st.dataframe(
-                    not_qe_df,
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-            with tab3:
-                st.dataframe(
-                    review_df,
-                    use_container_width=True,
-                    hide_index=True
-                )
+            st.dataframe(
+                result_df,
+                use_container_width=True,
+                hide_index=True
+            )
 
             output = BytesIO()
 
@@ -433,24 +372,6 @@ if uploaded_file:
                     index=False
                 )
 
-                qe_df.to_excel(
-                    writer,
-                    sheet_name="QE",
-                    index=False
-                )
-
-                not_qe_df.to_excel(
-                    writer,
-                    sheet_name="Not QE",
-                    index=False
-                )
-
-                review_df.to_excel(
-                    writer,
-                    sheet_name="Review",
-                    index=False
-                )
-
             st.download_button(
                 "📥 Download Results",
                 data=output.getvalue(),
@@ -460,7 +381,5 @@ if uploaded_file:
 
             if st.button("🧹 Clear Results"):
 
-                if "bulk_result" in st.session_state:
-                    del st.session_state["bulk_result"]
-
+                del st.session_state["bulk_result"]
                 st.rerun()
